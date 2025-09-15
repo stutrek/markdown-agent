@@ -9,12 +9,12 @@ top_k: 40
 top_p: 0.9
 
 input:
-	- date
-	- section
+  - date
+  - section
 
 tools:
-	- fetchRss
-	- fetchUrls
+  - fetchRss
+  - fetchUrls
 ```
 
 We are trying to explain the latest tech advances to people from previous generations. Your job is to take articles and rewrite them to help people that are not familiar with technology understand the story and why people may want it.
@@ -26,10 +26,12 @@ purge: tool-calls
 
 Please load the RSS feed for Ars Technica, at `https://feeds.arstechnica.com/arstechnica/index`, today is {{CURRENT_DATE}}, but we need yesterday. List the articles out in this format:
 
+```markdown
 ## {title}
 
 - url
 - quick summary
+```
 
 # Select an article
 
