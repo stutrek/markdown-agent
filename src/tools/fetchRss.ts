@@ -61,16 +61,15 @@ export async function fetchRss(
 				.map((item, index) => {
 					const title = item.title || item.title || `Item ${index + 1}`;
 					const description =
-						item.description ||
 						item.content ||
+						item.description ||
 						item.summary ||
 						"No description";
-					return `##[${title}](${item.link})\n${description}\n`;
+					return `## [${title}](${item.link})\n${description}\n\n`;
 				})
-				.join("\n---\n");
+				.join("\n\n---\n\n");
 
-			const text = formatted.replace(/\s+/g, " ").trim();
-			allResults.push(text);
+			allResults.push(formatted);
 		} catch (error) {
 			throw new Error(
 				`Failed to fetch RSS ${url}: ${error instanceof Error ? error.message : String(error)}`,

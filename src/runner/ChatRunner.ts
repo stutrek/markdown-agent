@@ -8,6 +8,7 @@ import { Ollama } from "ollama";
 import { z } from "zod";
 import { saveDebugOutput } from "../outputUtils";
 import type { Phase, Tool, ToolFactory } from "../types";
+import { replaceTemplateVariables } from "./utils";
 
 export interface ChatRunnerConfig {
 	ollamaConfig: any;
@@ -17,6 +18,7 @@ export interface ChatRunnerConfig {
 	systemPrompt: string;
 	basePath: string;
 	templateOptions: Record<string, any>;
+	outputName: string;
 	onThinkingChunk: (chunk: string) => void;
 	onContentChunk: (chunk: string) => void;
 	onToolCall: (toolCall: ToolCall) => void;
@@ -28,9 +30,9 @@ export class ChatRunner {
 	private messages: Message[] = []; // Complete message history
 	private purgedMessages: Message[] = []; // Purged message history for AI context
 	private ollamaClient: Ollama;
-	private startTime: string;
 	private config: ChatRunnerConfig;
 	private tools: Tool[] = [];
+	startTime: string;
 
 	/**
 	 * Convert tools with Zod schemas to the format expected by Ollama
@@ -60,35 +62,22 @@ export class ChatRunner {
 		});
 	}
 
-	private replaceTemplateVariables(
-		template: string,
-		options: Record<string, any>,
-	): string {
-		let content = template;
-		for (const [key, value] of Object.entries(options)) {
-			if (value !== undefined && value !== null) {
-				content = content.replaceAll(`{{${key}}}`, String(value));
-			}
-		}
-
-		content = content.replaceAll(
-			"{{CURRENT_DATE}}",
-			new Date().toISOString().split("T")[0],
-		);
-		return content;
-	}
-
 	private async saveDebugOutput(): Promise<void> {
-		await saveDebugOutput(this.startTime, this.messages as any);
+		await saveDebugOutput(
+			this.config.basePath,
+			this.config.outputName,
+			this.startTime,
+			this.messages as any,
+		);
 	}
 
 	async run(phase: Phase): Promise<Message[]> {
 		// Replace template variables in both prompts
-		const processedSystemPrompt = this.replaceTemplateVariables(
+		const processedSystemPrompt = replaceTemplateVariables(
 			this.config.systemPrompt,
 			this.config.templateOptions,
 		);
-		const templatedUserPrompt = this.replaceTemplateVariables(
+		const templatedUserPrompt = replaceTemplateVariables(
 			phase.prompt,
 			this.config.templateOptions,
 		);

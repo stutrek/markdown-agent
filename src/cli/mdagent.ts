@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
-import { dirname, resolve } from "node:path";
-import { ChatRunner, type ChatRunnerConfig } from "../agents/ChatRunner";
-import { createMarkdownAgent } from "../agents/markdown/converter";
-import { runMultiPhase } from "../agents/multi-phase";
+import { basename, dirname, resolve } from "node:path";
+import { saveFinalOutput } from "../outputUtils";
+import { ChatRunner, type ChatRunnerConfig } from "../runner/ChatRunner";
+import { renderHtml } from "../runner/html/renderer";
+import { createMarkdownAgent } from "../runner/markdown/converter";
+import { runMultiPhase } from "../runner/multi-phase";
 
 const verboseEventListeners = (): Pick<
 	ChatRunnerConfig,
@@ -145,22 +147,21 @@ async function main() {
 			templateOptions: templateVars,
 			systemPrompt: agent.systemPrompt,
 			basePath: dirname(markdownPath),
+			outputName: basename(markdownPath).replace(/\.md$/, ""),
 			...verboseEventListeners(),
 		});
 
 		// Run all phases
 		const messages = await runMultiPhase(runner, agent.phases);
-
-		// Print the final response
-		const finalMessage = messages.at(-1);
-		if (finalMessage?.content) {
-			console.log("\n📋 Final Response:");
-			console.log("─".repeat(50));
-			console.log(finalMessage.content);
-			console.log("─".repeat(50));
-		} else {
-			console.log("\n✅ Agent completed successfully");
-		}
+		console.log("\n✅ Agent completed successfully");
+		const html = renderHtml(messages);
+		saveFinalOutput(
+			dirname(markdownPath),
+			basename(markdownPath).replace(/\.md$/, ""),
+			runner.startTime,
+			html,
+		);
+		console.log(`✅ Output saved`);
 	} catch (error) {
 		console.error("\n❌ Error:");
 		throw error;

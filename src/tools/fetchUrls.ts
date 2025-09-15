@@ -80,7 +80,7 @@ export async function fetchUrls(
 
 			// Clean and truncate
 			text = text.trim();
-			results.push("**URL: " + url + "**\n" + text);
+			results.push("**URL: " + url.url + "**\n" + text);
 		} catch (error) {
 			return `Failed to fetch URL ${url}: ${error instanceof Error ? error.message : String(error)}`;
 		}

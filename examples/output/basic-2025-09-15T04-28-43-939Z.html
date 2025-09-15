@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .messages-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .message {
+			display: none;
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+		.show-titles .message,
+		.message:last-child {
+			display: block;
+		}
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e1e5e9;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .message-header:hover {
+            background: #e9ecef;
+        }
+
+        .message-checkbox {
+            margin-right: 12px;
+            transform: scale(1.1);
+        }
+
+        .message-role {
+            font-weight: 600;
+            color: #495057;
+            text-transform: capitalize;
+            margin-right: 8px;
+        }
+
+        .message-role.system {
+            border-left: #6c757d;
+        }
+
+        .message-role.user {
+            border-left: #007bff;
+        }
+
+        .message-role.assistant {
+            border-left: #28a745;
+        }
+
+        .message-role.tool {
+            border-left: #fd7e14;
+        }
+
+        .message-content {
+            display: none;
+            padding: 16px;
+            border-top: 1px solid #e1e5e9;
+        }
+
+        .message-content.expanded {
+            display: block;
+        }
+
+        .message-content h1,
+        .message-content h2,
+        .message-content h3,
+        .message-content h4,
+        .message-content h5,
+        .message-content h6 {
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+
+        .message-content p {
+            margin-bottom: 12px;
+        }
+
+        .message-content pre {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 12px;
+            overflow-x: auto;
+            margin-bottom: 12px;
+        }
+
+        .message-content code {
+            background: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+
+        .message-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .message-content ul,
+        .message-content ol {
+            margin-bottom: 12px;
+            padding-left: 20px;
+        }
+
+        .message-content li {
+            margin-bottom: 4px;
+        }
+
+        .message-content blockquote {
+            border-left: 4px solid #007bff;
+            padding-left: 16px;
+            margin: 16px 0;
+            color: #6c757d;
+        }
+
+        .message-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+        }
+
+        .message-content th,
+        .message-content td {
+            border: 1px solid #dee2e6;
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        .message-content th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .expand-all {
+			display: none;
+            background: #007bff;
+        }
+		.show-titles .expand-all {
+			display: block;
+		}
+
+        .expand-all:hover {
+            background: #0056b3;
+        }
+
+        .expand-all:active {
+            transform: translateY(1px);
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+		.button {
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+		}
+
+        .toggle-titles {
+            background: #6c757d;
+            color: white;
+        }
+
+        .toggle-titles:hover {
+            background: #5a6268;
+        }
+
+        .toggle-titles:active {
+            transform: translateY(1px);
+        }
+
+        .message-header.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="messages-container">
+        <div class="controls">
+			<button class="toggle-titles button" onclick="toggleTitles()">Show All Messages</button>
+            <button class="expand-all button" onclick="toggleAllMessages()">Expand All Messages</button>
+        </div>
+        
+        <div class="message">
+            <label class="message-header" onclick="toggleMessage(0)">
+                <input type="checkbox" 
+                       class="message-checkbox" 
+                       id="message-0"
+                       
+                       onchange="toggleMessage(0)">
+                <span class="message-role system">system</span>
+                <span></span>
+            </label>
+            <div class="message-content " 
+                 id="content-0">
+                <p>We are trying to explain the latest tech advances to people from previous generations. Your job is to take articles and rewrite them to help people that are not familiar with technology understand the story and why people may want it.</p>
+
+            </div>
+        </div>
+        <div class="message">
+            <label class="message-header" onclick="toggleMessage(1)">
+                <input type="checkbox" 
+                       class="message-checkbox" 
+                       id="message-1"
+                       
+                       onchange="toggleMessage(1)">
+                <span class="message-role user">user</span>
+                <span>215 chars - Please load the RSS feed for Ars Technica, at &#x60;htt</span>
+            </label>
+            <div class="message-content " 
+                 id="content-1">
+                <p>Please load the RSS feed for Ars Technica, at <code>https://feeds.arstechnica.com/arstechnica/index</code>, today is 2025-09-15, but we need yesterday. List the articles out in this format:</p>
+<h2>{title}</h2>
+<ul>
+<li>url</li>
+<li>quick summary</li>
+</ul>
+
+            </div>
+        </div>
+        <div class="message">
+            <label class="message-header" onclick="toggleMessage(2)">
+                <input type="checkbox" 
+                       class="message-checkbox" 
+                       id="message-2"
+                       
+                       onchange="toggleMessage(2)">
+                <span class="message-role assistant">assistant</span>
+                <span>fetch_rss - {&quot;date&quot;:&quot;2025-09-14&quot;,&quot;urls&quot;:&quot;https://feeds.arstech</span>
+            </label>
+            <div class="message-content " 
+                 id="content-2">
+                <pre>[
+  {
+    "function": {
+      "name": "fetch_rss",
+      "arguments": {
+        "date": "2025-09-14",
+        "urls": "https://feeds.arstechnica.com/arstechnica/index"
+      }
+    }
+  }
+]</pre>
+            </div>
+        </div>
+        <div class="message">
+            <label class="message-header" onclick="toggleMessage(3)">
+                <input type="checkbox" 
+                       class="message-checkbox" 
+                       id="message-3"
+                       
+                       onchange="toggleMessage(3)">
+                <span class="message-role tool">tool</span>
+                <span>541 chars - fetch_rss - ## [The US is trying to kick-start a “nuclear ener</span>
+            </label>
+            <div class="message-content " 
+                 id="content-3">
+                <h2><a href="https://arstechnica.com/science/2025/09/the-us-is-trying-to-kick-start-a-nuclear-energy-renaissance/">The US is trying to kick-start a “nuclear energy renaissance”</a></h2>
+<p>Push to revive nuclear energy relies on deregulation; experts say strategy is misplaced.</p>
+<hr>
+<h2><a href="https://arstechnica.com/space/2025/09/60-years-after-gemini-newly-processed-images-reveal-incredible-details/">60 years after Gemini, newly processed images reveal incredible details</a></h2>
+<p>&quot;It&#39;s that level of risk that they were taking. I think that&#39;s what really hit home.&quot;</p>
+
+            </div>
+        </div>
+        <div class="message">
+            <label class="message-header" onclick="toggleMessage(4)">
+                <input type="checkbox" 
+                       class="message-checkbox" 
+                       id="message-4"
+                       
+                       onchange="toggleMessage(4)">
+                <span class="message-role assistant">assistant</span>
+                <span>732 chars - ## The US is trying to kick-start a “nuclear energ</span>
+            </label>
+            <div class="message-content " 
+                 id="content-4">
+                <h2>The US is trying to kick-start a “nuclear energy renaissance”</h2>
+<ul>
+<li><a href="https://arstechnica.com/science/2025/09/the-us-is-trying-to-kick-start-a-nuclear-energy-renaissance/">https://arstechnica.com/science/2025/09/the-us-is-trying-to-kick-start-a-nuclear-energy-renaissance/</a></li>
+<li>The U.S. is pushing to bring back nuclear power by relaxing rules, but experts warn that this plan may be misguided and could slow the transition to cleaner, safer energy sources.</li>
+</ul>
+<hr>
+<h2>60 years after Gemini, newly processed images reveal incredible details</h2>
+<ul>
+<li><a href="https://arstechnica.com/space/2025/09/60-years-after-gemini-newly-processed-images-reveal-incredible-details/">https://arstechnica.com/space/2025/09/60-years-after-gemini-newly-processed-images-reveal-incredible-details/</a></li>
+<li>Scientists have re‑examined old photographs from the 1960s Gemini space program, using modern software to sharpen the images and uncover fascinating new details about early spaceflight.</li>
+</ul>
+
+            </div>
+        </div>
+        <div class="message">
+            <label class="message-header" onclick="toggleMessage(5)">
+                <input type="checkbox" 
+                       class="message-checkbox" 
+                       id="message-5"
+                       
+                       onchange="toggleMessage(5)">
+                <span class="message-role user">user</span>
+                <span>264 chars - Find the article about the most obscure, advanced,</span>
+            </label>
+            <div class="message-content " 
+                 id="content-5">
+                <p>Find the article about the most obscure, advanced, arcane, and esoteric topic.</p>
+<p>Load the article using these settings in fetch url:</p>
+<ul>
+<li>url: {the url of the article}</li>
+<li>css selector for content: <code>article</code></li>
+</ul>
+<p>Confirm the article loaded and continue with no commentary.</p>
+
+            </div>
+        </div>
+        <div class="message">
+            <label class="message-header" onclick="toggleMessage(6)">
+                <input type="checkbox" 
+                       class="message-checkbox" 
+                       id="message-6"
+                       
+                       onchange="toggleMessage(6)">
+                <span class="message-role assistant">assistant</span>
+                <span>fetch_urls - {&quot;urls&quot;:[{&quot;selector&quot;:&quot;article&quot;,&quot;url&quot;:&quot;https://arst</span>
+            </label>
+            <div class="message-content " 
+                 id="content-6">
+                <pre>[
+  {
+    "function": {
+      "name": "fetch_urls",
+      "arguments": {
+        "urls": [
+          {
+            "selector": "article",
+            "url": "https://arstechnica.com/space/2025/09/60-years-after-gemini-newly-processed-images-reveal-incredible-details/"
+          }
+        ]
+      }
+    }
+  }
+]</pre>
+            </div>
+        </div>
+        <div class="message">
+            <label class="message-header" onclick="toggleMessage(7)">
+                <input type="checkbox" 
+                       class="message-checkbox" 
+                       id="message-7"
+                       
+                       onchange="toggleMessage(7)">
+                <span class="message-role tool">tool</span>
+                <span>22466 chars - fetch_urls - **URL: https://arstechnica.com/space/2025/09/60-ye</span>
+            </label>
+            <div class="message-content " 
+                 id="content-7">
+                <p><strong>URL: <a href="https://arstechnica.com/space/2025/09/60-years-after-gemini-newly-processed-images-reveal-incredible-details/">https://arstechnica.com/space/2025/09/60-years-after-gemini-newly-processed-images-reveal-incredible-details/</a></strong><br><a href="#main">Skip to content</a></p>
+<p>Text settings</p>
+<p>Story text</p>
+<p>Size Small Standard Large Width * Standard Wide Links Standard Orange</p>
+<p>* Subscribers only<br>  <a href="/store/product/subscriptions/">Learn more</a></p>
+<p>Minimize to nav</p>
+<p>Six decades have now passed since some of the most iconic Project Gemini spaceflights. The 60th anniversary of Gemini 4, when Ed White conducted the first US spacewalk, came in June. The next mission, Gemini 5, ended just two weeks ago, in 1965. These missions are now forgotten by most Americans, as most of the people alive during that time are now deceased.</p>
+<p>However, during these early years of spaceflight, NASA engineers and astronauts cut their teeth on a variety of spaceflight firsts, flying a series of harrowing missions during which it seems a miracle that no one died.</p>
+<p>Because the Gemini missions, as well as NASA&#39;s first human spaceflight program Mercury, yielded such amazing stories, I was thrilled to realize that a new book has recently been published—<em><a href="https://www.apolloremastered.com/gemini-and-mercury-remastered">Gemini &amp; Mercury Remastered</a></em>—that brings them back to life in vivid color.</p>
+<p>The book is a collection of 300 photographs from NASA&#39;s Mercury and Gemini programs during the 1960s, in which <a href="https://x.com/AndySaunders_1">Andy Saunders</a> has meticulously restored the images and then deeply researched their background to more fully tell the stories behind them. The end result is a beautiful and powerful reminder of just how brave America&#39;s first pioneers in space were. What follows is a lightly edited conversation with Saunders about how he developed the book and some of his favorite stories from it.</p>
+<p><strong>Ars</strong>: <em>Why put out a book on Mercury and Gemini now?</em></p>
+<p><strong>Andy Saunders</strong>: Well, it&#39;s the 60th anniversaries of the Gemini missions, but the book is really the prequel to my first book, <em>Apollo Remastered</em>. This is about the missions that came before. So it takes us right back to the very dawn of human space exploration, back to the very beginning, and this was always a project I was going to work on next. Because, as well as being obviously very important in spaceflight history, they&#39;re very important in terms of human history, the human evolution, even, you know, the first time we were able to escape Earth.</p>
+<p>For tens of thousands of years, civilizations have looked up and dreamt of leaving Earth and voyaging to the stars. And this golden era in the early 1960s is when that ancient dream finally became a reality. Also, of course, the first opportunity to look back at Earth and give us that unique perspective. But I think it&#39;s really the photographs specifically that will just forever symbolize and document at the beginning of our expansion out into the cosmos. You know, of course, we went to the Moon with Apollo. We&#39;ll go back with Artemis. We spent long periods on the International Space Station. We&#39;ll walk on Mars. We&#39;ll eventually become a multi-planetary species. But this is where it all began and how it all began.</p>
+<p><strong>Ars</strong>: <em>They used modified Hasselblad cameras during Apollo to capture these amazing images. What types of cameras were used during Mercury and Gemini?</em></p>
+<p><strong>Saunders</strong>: Mercury was more basic cameras. So on the very first missions, NASA didn&#39;t want the astronaut to take a camera on board. The capsules were tiny. They were very busy. They&#39;re very short missions, obviously very groundbreaking missions. So, the first couple of missions, there was a camera out of the porthole window, just taking photographs automatically. But it was John Glenn on his mission (<a href="https://en.wikipedia.org/wiki/Mercury-Atlas_6">Mercury-Atlas 6</a>) who said, &quot;No, I want to take a camera. People want to know what it&#39;s going to be like to be an astronaut. They&#39;re going to want to look at Earth through the window. I&#39;m seeing things no humans ever seen before.&quot; So he literally saw a $40 camera in a drugstore on his way after a haircut at Cocoa Beach. He thought, &quot;That&#39;s perfect.&quot; And he bought it himself, and then NASA adapted it. They put a pistol grip on to help him to use it. And with it, he took the first still photographs of Earth from space.</p>
+<p>So it was the early astronauts that kind of drove the desire to take cameras themselves, but they were quite basic. Wally Schirra (<a href="https://en.wikipedia.org/wiki/Mercury-Atlas_8">Mercury-Atlas 8</a>) then took the first Hasselblad. He wanted medium format, better quality, but really, the photographs from Mercury aren&#39;t as stunning as Gemini. It&#39;s partly the windows and the way they took the photos, and they&#39;d had little experience. Also, preservation clearly wasn&#39;t high up on the agenda in Mercury, because the original film is evidently in a pretty bad state. The first American in space is an incredibly important moment in history. But every single frame of the original film of Alan Shepard&#39;s flight was scribbled over with felt pen, it&#39;s torn, and it&#39;s fixed with like a piece of sticky tape. But it&#39;s a reminder that these weren&#39;t taken for their aesthetic quality. They weren&#39;t taken for posterity. You know, they were technical information. The US was trying to catch up with the Soviets. Preservation wasn&#39;t high up on the agenda.</p>
+<p><a href="https://cdn.arstechnica.net/wp-content/uploads/2025/09/09-Our-Planet-Gemini-11_NASA_ASU_Andy-Saunders.jpg"><img src="https://cdn.arstechnica.net/wp-content/uploads/2025/09/09-Our-Planet-Gemini-11_NASA_ASU_Andy-Saunders.jpg" alt=""></a></p>
+<p>This is not some distant planet seen in a sci-fi movie, it&#39;s our Earth, in real life, as we explored space in the 1960s. The Sahara desert, photographed from Gemini 11, September 14, 1966. As we stand at the threshold of a new space age, heading back to the Moon, onward to Mars and beyond, the photographs taken during Mercury and Gemini will forever symbolize and document the beginning of humankind&#39;s expansion out into the cosmos.</p>
+<p>NASA / ASU / Andy Saunders</p>
+<p>This is not some distant planet seen in a sci-fi movie, it&#39;s our Earth, in real life, as we explored space in the 1960s. The Sahara desert, photographed from Gemini 11, September 14, 1966. As we stand at the threshold of a new space age, heading back to the Moon, onward to Mars and beyond, the photographs taken during Mercury and Gemini will forever symbolize and document the beginning of humankind&#39;s expansion out into the cosmos. NASA / ASU / Andy Saunders</p>
+<p><a href="https://cdn.arstechnica.net/wp-content/uploads/2025/09/08-Gemini-11-Altitude-Record_NASA_ASU_Andy-Saunders.jpg"><img src="https://cdn.arstechnica.net/wp-content/uploads/2025/09/08-Gemini-11-Altitude-Record_NASA_ASU_Andy-Saunders-1024x1024.jpg" alt=""></a></p>
+<p>Gemini took not only some of the first, but still some of the finest photographs of Earth ever captured on film - partly due to the high altitudes they flew to. Gemini 11&#39;s Earth orbit altitude record held for 58 years until last year&#39;s Polaris Dawn mission. Reflected in the window, Richard Gordon&#39;s hand can be seen as he releases the shutter of his Hasselblad camera to capture the moment of apogee, over eastern Australia on September 14, 1966.</p>
+<p>NASA / ASU / Andy Saunders</p>
+<p>Gemini took not only some of the first, but still some of the finest photographs of Earth ever captured on film - partly due to the high altitudes they flew to. Gemini 11&#39;s Earth orbit altitude record held for 58 years until last year&#39;s Polaris Dawn mission. Reflected in the window, Richard Gordon&#39;s hand can be seen as he releases the shutter of his Hasselblad camera to capture the moment of apogee, over eastern Australia on September 14, 1966. NASA / ASU / Andy Saunders</p>
+<p><a href="https://cdn.arstechnica.net/wp-content/uploads/2025/09/07-Gemini-9A-Spacewalk-from-hell_NASA_ASU_Andy-Saunders.jpg"><img src="https://cdn.arstechnica.net/wp-content/uploads/2025/09/07-Gemini-9A-Spacewalk-from-hell_NASA_ASU_Andy-Saunders-1024x1024.jpg" alt=""></a></p>
+<p>The rudimentary-looking Gemini spacecraft, Earth, and the unfiltered, bright, white sunlight captured at the start of Gene Cernan&#39;s &quot;spacewalk from hell&quot; on Gemini 9A, June 5, 1966. Effectively blinded, exhausted, overheating, and losing communications with his Command Pilot, Cernan was fortunate to make it back inside the spacecraft alive.</p>
+<p>NASA / ASU / Andy Saunders</p>
+<p>The rudimentary-looking Gemini spacecraft, Earth, and the unfiltered, bright, white sunlight captured at the start of Gene Cernan&#39;s &quot;spacewalk from hell&quot; on Gemini 9A, June 5, 1966. Effectively blinded, exhausted, overheating, and losing communications with his Command Pilot, Cernan was fortunate to make it back inside the spacecraft alive. NASA / ASU / Andy Saunders</p>
+<p>Gemini took not only some of the first, but still some of the finest photographs of Earth ever captured on film - partly due to the high altitudes they flew to. Gemini 11&#39;s Earth orbit altitude record held for 58 years until last year&#39;s Polaris Dawn mission. Reflected in the window, Richard Gordon&#39;s hand can be seen as he releases the shutter of his Hasselblad camera to capture the moment of apogee, over eastern Australia on September 14, 1966. NASA / ASU / Andy Saunders</p>
+<p>The rudimentary-looking Gemini spacecraft, Earth, and the unfiltered, bright, white sunlight captured at the start of Gene Cernan&#39;s &quot;spacewalk from hell&quot; on Gemini 9A, June 5, 1966. Effectively blinded, exhausted, overheating, and losing communications with his Command Pilot, Cernan was fortunate to make it back inside the spacecraft alive. NASA / ASU / Andy Saunders</p>
+<p><a href="https://cdn.arstechnica.net/wp-content/uploads/2025/09/06-Salton-Sea-Gemini-5-60th_NASA_ASU_Andy-Saunders.jpg"><img src="https://cdn.arstechnica.net/wp-content/uploads/2025/09/06-Salton-Sea-Gemini-5-60th_NASA_ASU_Andy-Saunders-640x640.jpg" alt=""></a></p>
+<p>The Salton Sea in California&#39;s Imperial Valley, photographed 60 years ago (August 21-29, 1965), from Gemini 5. Gemini had to demonstrate all of the key concepts required to enable NASA to reach for the Moon with Apollo. At eight days, Gemini 5 was the first space mission that would be long enough for a return trip to the Moon.</p>
+<p>NASA / ASU / Andy Saunders</p>
+<p><a href="https://cdn.arstechnica.net/wp-content/uploads/2025/09/05_Ed-White-Revealed-From-The-Shadows_NASA_ASU_Andy-Saunders.jpg"><img src="https://cdn.arstechnica.net/wp-content/uploads/2025/09/05_Ed-White-Revealed-From-The-Shadows_NASA_ASU_Andy-Saunders-640x604.jpg" alt=""></a></p>
+<p>Recovered from two separate frames of heavily underexposed film, and featured on the UK edition of <em>Gemini And Mercury Remastered</em>, Ed White gazes out into the heavens from inside Gemini 4, after his historic spacewalk. A star chart is seen above his head. White was later tragically killed in the Apollo 1 fire, along with Gus Grissom and Roger Chaffee.</p>
+<p>NASA / ASU / Andy Saunders</p>
+<p><a href="https://cdn.arstechnica.net/wp-content/uploads/2025/09/04-First-US-Spacewalk_NASA_ASU_Andy-Saunders.jpg"><img src="https://cdn.arstechnica.net/wp-content/uploads/2025/09/04-First-US-Spacewalk_NASA_ASU_Andy-Saunders-640x640.jpg" alt=""></a></p>
+<p>Ed White floats in the void, during the first U.S. spacewalk on Gemini 4, June 3, 1965. These awe-inspiring photographs, of a human form against the backdrop of Earth, wowed the public and were a clear turning point in NASA&#39;s appreciation for space photography. White is also featured on the cover of the book.</p>
+<p>NASA / ASU / Andy Saunders</p>
+<p><a href="https://cdn.arstechnica.net/wp-content/uploads/2025/09/02b-Shepard_NASA_Andy-Saunders.jpg"><img src="https://cdn.arstechnica.net/wp-content/uploads/2025/09/02b-Shepard_NASA_Andy-Saunders-640x475.jpg" alt=""></a></p>
+<p>&quot;Light this candle!&quot; Alan Shepard is waiting atop his Mercury-Redstone rocket, to become the second human, and first American in space, May 5, 1961. His heart rate quickened as the hatch was bolted shut.</p>
+<p>NASA / Andy Saunders</p>
+<p><strong>Ars</strong><em>: I want to understand your process. How many photos did you consider for this book?</em></p>
+<p><strong>Saunders</strong>: With Apollo, they took about 35,000 photographs. With Mercury and Gemini, there were about 5,000. Which I was quite relieved about.  So yeah, I went through all 5,000 they took. I&#39;m not sure how much 16 millimeter film in terms of time, because it was at various frame rates, but a lot of 16 millimeter film. So I went through every frame of film that was captured from launch to splashdown on every mission.</p>
+<p><strong>Ars</strong>: <em>Out of that material, how much did you end up processing?</em></p>
+<p><strong>Saunders</strong>: What I would first do is have a quick look, particularly if there&#39;s apparently nothing in them, because a lot of them are very underexposed. But with digital processing, like I did with the cover of the Apollo book, we can pull out stuff that you actually can&#39;t see in the raw file. So it&#39;s always worth taking a look. So do a very quick edit, and then if it&#39;s not of interest, it&#39;s discarded. Or it might be that clearly an important moment was happening, even if it&#39;s not a particularly stunning photograph, I would save that one. So I was probably down from 5,000 to maybe 800, and then do a better edit on it.</p>
+<p>And then the final 300 that are in the book are those that are either aesthetically stunning, or they&#39;re a big transformation, or they show something important that happened on the mission, or a historically significant moment. But also, what I want to do with the book, as well as showing the photographs, is tell the stories, these incredible human stories that, because of the risks they were taking. So to do that, I effectively reconstructed every mission from launch to splashdown by using lots of different pieces of information in order to effectively map the photography onto a timeline so that it can then tell the story through the captions. So a photograph might be in there simply to help tell part of the story.</p>
+<p><strong>Ars</strong>: <em>What was your favorite story to tell?</em></p>
+<p><strong>Saunders</strong>: Well, perhaps in terms of a chapter and a mission, I&#39;d say Gemini 4 is kind of the heart of the book. You know, first US space walk, quite a lot of drama occurred when they couldn&#39;t close the hatch. There&#39;s some quite poignant shots, particularly of Ed White, of course, who later lost his life in the Apollo 1 fire. But in terms of the story, I mean, Gemini 9A was just, there needs to be a movie about just Gemini 9A. Right from the start, from losing the prime crew, and then just what happened out on Gene Cernan&#39;s EVA, how he got back into the capsule alive is quite incredible, and all this detail I&#39;ve tried to cover because he took his camera. So he called it the spacewalk from hell. Everything that could go wrong went wrong. He was incredibly exhausted, overheated. His visor steamed over. He went effectively blind, and he was at the back of the adapter section. This is at a point when NASA just hadn&#39;t mastered EVA. So, simply how you maneuver in space, they just haven&#39;t mastered, so he was exhausted. He was almost blind. Then he lost communication with Tom Stafford, his command pilot. He tore his suit, because, of course, back then, there were all kinds of jagged parts on the spacecraft.</p>
+<p>And then when he&#39;s finally back in the hatch, he was quite a big chap, and they couldn&#39;t close the hatch, so he was bent double trying to close the hatch. He started to see stars. He said, Tom, if we don&#39;t close this hatch now and re-pressurize, I am going to die. They got it closed, got his helmet off, and Tom Stafford said he just looked like someone that had spent far too long in a sauna. Stafford sprayed him with a water hose to kind of cool him down. So what happened on that mission is just quite incredible. But there was something on every mission, you know, from Gus Grissom sinking of the Liberty Bell and him almost drowning, the heat shield coming loose, or an indicator that suggested the heat shield was loose on Glenn&#39;s mission. There&#39;s an image of that in the book. Like I said, I mapped everything to the timeline, and worked out the frame rates, and we&#39;ve got the clock we can see over his shoulder. So I could work out exactly when he was at the point of maximum heating through reentry, when part of the strapping that kept the retro pack on, to try and hold a heat shield on that hit the window, and he&#39;s talking, but no one was listening, because it was during radio blackout.</p>
+<p><a href="https://cdn.arstechnica.net/wp-content/uploads/2025/09/03b-Glenn-reentry_NASA_Andy-Saunders.jpg"><img src="https://cdn.arstechnica.net/wp-content/uploads/2025/09/03b-Glenn-reentry_NASA_Andy-Saunders.jpg" alt=""></a></p>
+<p>After being informed his heat shield may have come loose, John Glenn is holding steadfast in the face of real uncertainty, as he observes the retro pack burn up outside his window, illuminating the cabin in an orange glow, during re-entry on February 20, 1962. &quot;This is Friendship Seven. I think the pack just let go ... A real fireball outside! ... Great chunks of that retro pack breaking off all the way through!&quot;</p>
+<p>Credit: NASA / Andy Saunders</p>
+<p>After being informed his heat shield may have come loose, John Glenn is holding steadfast in the face of real uncertainty, as he observes the retro pack burn up outside his window, illuminating the cabin in an orange glow, during re-entry on February 20, 1962. &quot;This is Friendship Seven. I think the pack just let go ... A real fireball outside! ... Great chunks of that retro pack breaking off all the way through!&quot; Credit: NASA / Andy Saunders</p>
+<p>The process I used for this, on the low-quality 16 mm film, was to stack hundreds and hundreds of frames to bring out incredible detail. You can almost see the pores in his skin. To see this level of detail, to me, it&#39;s just like a portrait of courage. There he is, holding steadfast, not knowing if he&#39;s about to burn up in the atmosphere. So that was quite a haunting image, if you like, to be able to help you step on board, you know, these tiny Mercury spacecraft, to see them, to see what they saw, to look out the windows and see how they saw it.</p>
+<p><strong>Ars</strong>: <em>What was new or surprising to you as you spent so much time with these photos and looking at the details?</em></p>
+<p><strong>Saunders</strong>: The human side to them. Now that we can see them this clearly, they seem to have an emotional depth to them. And it&#39;s that level of risk that they were taking. I think that&#39;s what really hit home. The Earth shots are stunning. You know, you can almost feel the scale, particularly with a super wide lens, and the altitudes they flew to. And you can just imagine what it must have been like out on an EVA, for example. I think Gene Cernan said it was like sitting on God&#39;s front porch, the view he had on his EVA. So those Earth shots are stunning, but it&#39;s really those the human side that really hits home for me. I read every word of every transcript of every mission. All the conversations were recorded on tape between the air and the ground, and between the astronauts when they were out of ground contact, and reading those it really hits home what they were doing. I found myself holding my breath, and, you know, my shoulders were stiff.</p>
+<p><strong>Ars</strong>: <em>So what&#39;s next? I mean, there&#39;s only about 100 million photos from the Space Shuttle era.</em></p>
+<p><strong>Saunders</strong>: Thankfully, they weren&#39;t all taken on film. So if I wanted to complete space on film, then what I haven&#39;t yet done is Apollo-Soyuz, Skylab, and the first, whatever it is, 20 percent of the shuttle. So maybe that&#39;s next. But I would just like a rest, because I&#39;ve been doing this now since the middle of 2019, literally nonstop. It&#39;s all I&#39;ve done with Apollo and now Mercury and Gemini. The books make a really nice set in that they&#39;re exactly the same size. So it covers the first view of the curvature of Earth and space right through to our last steps on the Moon.</p>
+<p><a href="https://arstechnica.com/author/ericberger/"><img src="https://cdn.arstechnica.net/wp-content/uploads/2016/05/e.berger-45959.jpg" alt="Photo of Eric Berger"></a></p>
+<p><a href="https://arstechnica.com/author/ericberger/">Eric Berger</a> Senior Space Editor</p>
+<p><a href="https://arstechnica.com/author/ericberger/">Eric Berger</a> Senior Space Editor</p>
+<p>Eric Berger is the senior space editor at Ars Technica, covering everything from astronomy to private space to NASA policy, and author of two books: <a href="https://www.harpercollins.com/products/liftoff-eric-berger?variant=32126620205090"><em>Liftoff</em></a>, about the rise of SpaceX; and <a href="https://benbellabooks.com/shop/reentry/"><em>Reentry</em></a>, on the development of the Falcon 9 rocket and Dragon. A certified meteorologist, Eric lives in Houston.</p>
+<p><a href="https://arstechnica.com/space/2025/09/60-years-after-gemini-newly-processed-images-reveal-incredible-details/#comments" title="75 comments">75 Comments</a></p>
+<p>Comments</p>
+<p><a href="https://arstechnica.com/civis/threads/60-years-after-gemini-newly-processed-images-reveal-incredible-details.1509328/">Forum view</a></p>
+<p><img src="https://cdn.arstechnica.net/wp-content/themes/ars-v9/public/images/firework-loader.75ab30.gif" alt="Loading"> Loading comments...</p>
+<p><a href="https://arstechnica.com/space/2025/09/scientists-its-do-or-die-time-for-americas-primacy-exploring-the-solar-system/" title="Go to: Scientists: It’s do or die time for America’s primacy exploring the Solar System">Prev story</a></p>
+<p><a href="https://arstechnica.com/science/2025/09/the-us-is-trying-to-kick-start-a-nuclear-energy-renaissance/" title="Go to: The US is trying to kick-start a “nuclear energy renaissance”">Next story</a></p>
+<ol>
+<li><p><a href="https://arstechnica.com/space/2025/09/60-years-after-gemini-newly-processed-images-reveal-incredible-details/"><img src="https://cdn.arstechnica.net/wp-content/uploads/2025/09/01-Aldrin-Selfie-Before-After_NASA_ASU_Andy-Saunders-768x432.jpg" alt="Listing image for first story in Most Read: 60 years after Gemini, newly processed images reveal incredible details"></a></p>
+<ol>
+<li><a href="https://arstechnica.com/space/2025/09/60-years-after-gemini-newly-processed-images-reveal-incredible-details/">60 years after Gemini, newly processed images reveal incredible details</a></li>
+</ol>
+</li>
+<li><ol start="2">
+<li><a href="https://arstechnica.com/tech-policy/2025/09/girlsdoporn-owner-michael-pratt-gets-27-years-for-sex-trafficking-conspiracy/">“You are evil”: GirlsDoPorn ringleader Michael Pratt sentenced to 27 years</a></li>
+</ol>
+</li>
+<li><ol start="3">
+<li><a href="https://arstechnica.com/science/2025/09/the-us-is-trying-to-kick-start-a-nuclear-energy-renaissance/">The US is trying to kick-start a “nuclear energy renaissance”</a></li>
+</ol>
+</li>
+<li><ol start="4">
+<li><a href="https://arstechnica.com/health/2025/09/covid-shot-access-could-tighten-rfk-jr-may-claim-they-cause-child-deaths/">RFK Jr.’s CDC may limit COVID shots to 75 and up, claim they killed kids</a></li>
+</ol>
+</li>
+<li><ol start="5">
+<li><a href="https://arstechnica.com/gaming/2025/09/animal-crossing-mod-uses-ai-to-orchestrate-anti-tom-nook-villager-revolt/">Modder injects AI dialogue into 2002’s Animal Crossing using memory hack</a></li>
+</ol>
+</li>
+</ol>
+<p>Customize</p>
+
+            </div>
+        </div>
+        <div class="message">
+            <label class="message-header" onclick="toggleMessage(8)">
+                <input type="checkbox" 
+                       class="message-checkbox" 
+                       id="message-8"
+                       
+                       onchange="toggleMessage(8)">
+                <span class="message-role assistant">assistant</span>
+                <span>fetch_urls - {&quot;urls&quot;:[{&quot;selector&quot;:&quot;article&quot;,&quot;url&quot;:&quot;https://arst</span>
+            </label>
+            <div class="message-content " 
+                 id="content-8">
+                <pre>[
+  {
+    "function": {
+      "name": "fetch_urls",
+      "arguments": {
+        "urls": [
+          {
+            "selector": "article",
+            "url": "https://arstechnica.com/science/2025/09/the-us-is-trying-to-kick-start-a-nuclear-energy-renaissance/"
+          }
+        ]
+      }
+    }
+  }
+]</pre>
+            </div>
+        </div>
+        <div class="message">
+            <label class="message-header" onclick="toggleMessage(9)">
+                <input type="checkbox" 
+                       class="message-checkbox" 
+                       id="message-9"
+                       
+                       onchange="toggleMessage(9)">
+                <span class="message-role tool">tool</span>
+                <span>15174 chars - fetch_urls - **URL: https://arstechnica.com/science/2025/09/the</span>
+            </label>
+            <div class="message-content " 
+                 id="content-9">
+                <p><strong>URL: <a href="https://arstechnica.com/science/2025/09/the-us-is-trying-to-kick-start-a-nuclear-energy-renaissance/">https://arstechnica.com/science/2025/09/the-us-is-trying-to-kick-start-a-nuclear-energy-renaissance/</a></strong><br><a href="#main">Skip to content</a></p>
+<p>Text settings</p>
+<p>Story text</p>
+<p>Size Small Standard Large Width * Standard Wide Links Standard Orange</p>
+<p>* Subscribers only<br>  <a href="/store/product/subscriptions/">Learn more</a></p>
+<p>Minimize to nav</p>
+<p>In May, President Donald Trump signed four executive orders to facilitate the construction of nuclear reactors and the development of nuclear energy technology; the orders aim to cut red tape, ease approval processes, and reshape the role of the main regulatory agency, the Nuclear Regulatory Commission, or NRC. These moves, the administration said, were part of an effort to achieve American independence from foreign power providers by way of a “nuclear energy renaissance.”</p>
+<p>Self-reliance isn’t the only factor motivating nuclear power proponents outside of the administration: Following a decades-long trend away from nuclear energy, in part due to safety concerns and high costs, the technology has emerged as a potential option to try to mitigate climate change. Through <a href="https://climate.mit.edu/explainers/nuclear-energy">nuclear fission</a>, in which atoms are split to release energy, reactors don’t emit any greenhouse gases.</p>
+<p>The Trump administration wants to quadruple the nuclear sector’s domestic energy production, with the goal of producing <a href="https://www.utilitydive.com/news/trump-aims-for-400-gw-of-nuclear-by-2050-10-large-reactors-under-construct/749107/">400 gigawatts</a> by 2050. To help achieve that goal, scientific institutions like the Idaho National Laboratory, a leading research institute in nuclear energy, are pushing forward innovations such as more efficient types of fuel. Companies are also investing millions of dollars to develop their own nuclear reactor designs, a move from industry that was previously unheard of in the nuclear sector. For example, Westinghouse, a Pennsylvania-based nuclear power company, plans to build 10 new large reactors to help achieve the 2050 goal.</p>
+<p>However, the road to renaissance is filled with familiar obstacles. Nuclear energy infrastructure is “too expensive to build, and it takes too long to build,” said Allison Macfarlane, a science and technology policy expert at the University of British Columbia who used to chair the NRC from 2012 to 2014.</p>
+<p>And experts are divided on whether new nuclear technologies, such as small versions of reactors, are ready for primetime. The nuclear energy field is now “in a hype bubble that is driving unrealistic expectations,” said Edwin Lyman, the director of nuclear power safety at the Union of Concerned Scientists, a nonprofit science advocacy organization that has long acted as a <a href="https://www.ucs.org/energy/nuclear-power">nuclear safety watchdog</a>.</p>
+<p>Meanwhile, the Trump administration is trying to advance nuclear energy by <a href="https://www.cnbc.com/2025/07/17/trumps-nuclear-power-push-weakens-regulator-and-poses-safety-risks-former-officials-warn.html">weakening the NRC</a>, Lyman said. “The message is that it&#39;s regulation that has been the obstacle to deploying nuclear power, and if we just get rid of all this red tape, then the industry is going to thrive,” he added. “I think that&#39;s really misplaced.”</p>
+<p>Although streamlining the approval process might accelerate development, the true problem lies in the high costs of nuclear, which would need to be significantly cheaper to compete with other sources of energy such as natural gas, said Koroush Shirvan, a nuclear science researcher at the Massachusetts Institute of Technology. “Even the license-ready reactors are still not economical,” he said. If the newer reactor technologies do pan out, without government support and subsidies, Shirvan said, it is difficult to imagine them “coming online before 2035.”</p>
+<h2>It’s déjá vu all over again</h2>
+<p>Rumblings of a nuclear renaissance give experts a sense of déjà vu. The first resurgence in interest was around 2005, when many thought that nuclear energy could mitigate climate change and be an energy alternative to dwindling supply and rising prices of fossil fuels. But that enthusiasm slowed mainly after the Fukushima accident in 2011, in which a tsunami-triggered power outage—along with multiple safety failures—led to a nuclear meltdown at a facility in Japan. “So, the first nuclear renaissance fizzled out,” said Lyman.</p>
+<p>Globally, the proportion of electricity provided by nuclear energy has been dwindling. Although there has been an increase in generation, nuclear energy has <a href="https://ember-energy.org/latest-insights/global-electricity-review-2025/global-electricity-trends/">contributed less</a> to the share of global electricity demand, dropping to 9 percent in 2024 from a peak of about 17 percent in 2001. In the US, 94 reactors generate about a <a href="https://www.nrc.gov/reactors/power.html">fifth</a> of the nation’s electricity, a proportion that has held steady since 1990s. But only two of those reactors have come online in the last nearly 30 years.</p>
+<p>This renewed push is “a second bite at the apple, and we’ll have to see but it does seem to have a lot more of a headwind now,” said Lyman.</p>
+<p>Much of that movement comes from the private sector, said Todd Allen, a nuclear engineer at the University of Michigan. In the last couple of decades, dozens of nuclear energy companies have emerged, including TerraPower, co-founded by Bill Gates. “It feels more like normal capitalism than we ever had in nuclear,” Allen said. Those companies are working on developing the large reactors that have been the backbone of nuclear energy for decades, as well as newer technologies that can bolster the field.</p>
+<p>Proponents say <a href="https://undark.org/2023/07/20/the-big-problem-with-small-nuclear-reactors">small modular reactors</a>, or SMRs, and microreactors, which generate less than 300 megawatts and 20 megawatts, respectively, could offer safer, cheaper, and more flexible energy compared to their more traditional counterparts. (Large reactors have, on average, 900 megawatts of capacity.) One 2022 <a href="https://www.sciencedirect.com/science/article/abs/pii/S0029549322002758?via%3Dihub">study</a> found that modularization can reduce construction time by up to 60 percent.</p>
+<p>These designs have taken the spotlight: In 2024, <a href="https://www.power-eng.com/nuclear/smrs/smr-market-expected-to-reach-295bn-by-2043-shows-report/">a report estimated</a> that the SMR market would reach $295 billion by 2043. In June, Energy Secretary Chris Wright told Congress that DOE will have <a href="https://www.meritalk.com/articles/doe-to-launch-3-small-nuclear-reactors-by-2025/">at least three SMRs running</a> by July of next year. And in July of this year, the Nuclear Energy Agency launched a <a href="https://www.oecd-nea.org/jcms/pl_108128/nea-launches-interactive-smr-dashboard">dashboard to track SMR technologies</a> around the world, which identified 74 SMR designs at different stages around the world. The first commercial SMR in North America is currently being constructed in Canada, with plans to be operational by 2030.</p>
+<p>But whether SMRs and microreactors are actually safer and more cost-effective remains to be determined. A 2022 <a href="https://www.pnas.org/doi/full/10.1073/pnas.2111833119">study</a> found that SMRs would likely produce more leakage and nuclear waste than conventional reactors. Studying them, though, is difficult since so few are currently operational.</p>
+<p>In part, that may be because of cost. Multiple <a href="https://ieefa.org/resources/small-modular-reactors-still-too-expensive-too-slow-and-too-risky">analyses</a> have concluded that, because of rising construction and operating costs, SMRs might not be financially viable enough to compete for the world’s energy markets, including in <a href="https://www.nature.com/articles/s41560-024-01512-y">developing countries</a> that lack affordable access to electricity.</p>
+<p>And recent ventures have hit road bumps: For example, NuScale, the only SMR developer with a design approved by the NRC, had to shut down its operations in November 2023 due to increasingly high costs (though another uprated SMR design was approved earlier this year).</p>
+<p>“Nothing is really commercialized yet,” said Macfarlane. Most of the tech companies haven’t figured out expenses, supply chains, the kind of waste they are going to produce or security at their reactors, she added.</p>
+<p><a href="https://www.reuters.com/business/energy/us-reactor-builders-need-bigger-fuel-deals-avoid-supply-crunch-2025-06-05/">Fuel supply</a> is also a barrier since most plants use uranium enriched at low rates, but SMRs and microreactors use uranium enriched at higher levels, which is typically sourced from Russia and not commercially available in the US. So scientists at the Idaho National Laboratory are working to recover enriched uranium from existing reactors and developed new, more cost-effective fuels, said Jess Gehin, the associate laboratory director for the Nuclear Science &amp; Technology Directorate at the INL. They are also using artificial intelligence and modeling simulation tools and capabilities to optimize nuclear energy systems, he added: “We got to reach 400 gigawatts, we need to accelerate all of this.”</p>
+<p>Companies are determined to face and surpass these barriers. Some have begun pouring concrete, such as one nuclear company called Kairos Power that began building a demo of their SMR design in Tennessee; the plant is <a href="https://eepower.com/tech-insights/3-next-gen-nuclear-reactor-projects-move-forward-in-2005">projected</a> to be fully operational by 2027. “I would make the case that we&#39;re moving faster than many in the field, if not the fastest,” Mike Laufer, the company’s CEO and co-founder, <a href="https://www.reuters.com/business/energy/nuclear-developer-kairos-power-champions-iterative-build-2024-09-10/">told Reuters</a> last year.</p>
+<p>Some experts think achieving nuclear expansion can be done—and revel in the progress so far: “I would have never thought we&#39;d be in this position where we&#39;re working so hard to expand nuclear, because for most of my career, it wasn&#39;t that way,” said Gehin. “And I would say each month that goes by exceeds my expectations on the next bigger things that are coming.&quot;</p>
+<h2>Doing more with less?</h2>
+<p>Although the Trump administration aims to accelerate nuclear energy through executive orders, in practice, it has not allocated new funding yet, said Matt Bowen, an expert on nuclear energy, waste, and nonproliferation at Columbia University’s Center on Global Energy Policy. In fact, the initial White House <a href="https://www.world-nuclear-news.org/articles/us-administrations-initial-proposal-sees-cuts-to-nuclear-energy-budget">budget proposed</a> cutting $4.7 billion from the Department of Energy, including $408 million from the Office of Nuclear Energy allocated for nuclear research in the 2026 fiscal year.</p>
+<p>“The administration was proposing cuts to Office of Nuclear Energy and DOE more broadly, and DOGE is pushing staff out,” said Bowen. “How do you do more with less? Less staff, less money.”</p>
+<p>The Trump administration places the blame for the nuclear sector’s stagnation on the NRC, which oversees licensing and recertification processes that cost the industry millions of dollars each year in compliance. In his executive orders, Trump called for a major reorganization of the NRC. Some of the proposed changes, like streamlining the approval process (which can take years for new plants), may be welcomed because “for a long time, they were very, very, very slow,” said Charles Forsberg, a nuclear chemical engineer at MIT. But there are worries that the executive orders could do more than cut red tape.</p>
+<p>“Every word in those orders is of concern, because the thrust of those orders is to essentially strip the Nuclear Regulatory Commission of its independence from the executive branch, essentially nullifying the original purpose,” said Lyman.</p>
+<p>Some experts fear that with these new constraints, NRC staff will have less time and fewer resources to do their jobs, which could impact power plant safety in the future. Bowen said: “This notion that the problem for nuclear energy is regulation, and so all we need to do is deregulate, is both wrong and also really problematic.”</p>
+<p>The next few decades will tell whether nuclear, especially SMRs, can overcome economic and technical challenges to safely contribute to decarbonization efforts. Some, like Gehin, are optimistic. “I think we&#39;re going to accelerate,” he said. “We certainly can achieve a dramatic deployment if we put our mindset to it.”</p>
+<p>But making nuclear financially competitive will take serious commitment from the government and the dozens of companies, with many still skeptical, Shirvan said. “I am quite, I would say, on the pessimistic scale when it comes to the future of nuclear energy in the US.”</p>
+<p><em>This article was originally published on <a href="https://undark.org">Undark</a>. Read the <a href="https://undark.org/2025/09/08/trump-nuclear-renaissance/">original article</a>.</em></p>
+<p><img src="https://logs-01.loggly.com/inputs/4a05953f-1607-4284-825e-7df393822342.gif?postid=98112&amp;title=Is-a-%E2%80%98Nuclear-Renaissance%E2%80%99-Possible-in-the-United-States?" alt=""></p>
+<p><a href="https://arstechnica.com/author/undark/">Undark Magazine</a></p>
+<p><a href="https://arstechnica.com/author/undark/">Undark Magazine</a></p>
+<p><a href="https://arstechnica.com/science/2025/09/the-us-is-trying-to-kick-start-a-nuclear-energy-renaissance/#comments" title="328 comments">328 Comments</a></p>
+<p>Comments</p>
+<p><a href="https://arstechnica.com/civis/threads/the-us-is-trying-to-kick-start-a-%E2%80%9Cnuclear-energy-renaissance%E2%80%9D.1509329/">Forum view</a></p>
+<p><img src="https://cdn.arstechnica.net/wp-content/themes/ars-v9/public/images/firework-loader.75ab30.gif" alt="Loading"> Loading comments...</p>
+<p><a href="https://arstechnica.com/space/2025/09/60-years-after-gemini-newly-processed-images-reveal-incredible-details/" title="Go to: 60 years after Gemini, newly processed images reveal incredible details">Prev story</a></p>
+<ol>
+<li><p><a href="https://arstechnica.com/space/2025/09/60-years-after-gemini-newly-processed-images-reveal-incredible-details/"><img src="https://cdn.arstechnica.net/wp-content/uploads/2025/09/01-Aldrin-Selfie-Before-After_NASA_ASU_Andy-Saunders-768x432.jpg" alt="Listing image for first story in Most Read: 60 years after Gemini, newly processed images reveal incredible details"></a></p>
+<ol>
+<li><a href="https://arstechnica.com/space/2025/09/60-years-after-gemini-newly-processed-images-reveal-incredible-details/">60 years after Gemini, newly processed images reveal incredible details</a></li>
+</ol>
+</li>
+<li><ol start="2">
+<li><a href="https://arstechnica.com/tech-policy/2025/09/girlsdoporn-owner-michael-pratt-gets-27-years-for-sex-trafficking-conspiracy/">“You are evil”: GirlsDoPorn ringleader Michael Pratt sentenced to 27 years</a></li>
+</ol>
+</li>
+<li><ol start="3">
+<li><a href="https://arstechnica.com/science/2025/09/the-us-is-trying-to-kick-start-a-nuclear-energy-renaissance/">The US is trying to kick-start a “nuclear energy renaissance”</a></li>
+</ol>
+</li>
+<li><ol start="4">
+<li><a href="https://arstechnica.com/health/2025/09/covid-shot-access-could-tighten-rfk-jr-may-claim-they-cause-child-deaths/">RFK Jr.’s CDC may limit COVID shots to 75 and up, claim they killed kids</a></li>
+</ol>
+</li>
+<li><ol start="5">
+<li><a href="https://arstechnica.com/gaming/2025/09/animal-crossing-mod-uses-ai-to-orchestrate-anti-tom-nook-villager-revolt/">Modder injects AI dialogue into 2002’s Animal Crossing using memory hack</a></li>
+</ol>
+</li>
+</ol>
+<p>Customize</p>
+
+            </div>
+        </div>
+        <div class="message">
+            <label class="message-header" onclick="toggleMessage(10)">
+                <input type="checkbox" 
+                       class="message-checkbox" 
+                       id="message-10"
+                       
+                       onchange="toggleMessage(10)">
+                <span class="message-role assistant">assistant</span>
+                <span>28 chars - Article loaded successfully.</span>
+            </label>
+            <div class="message-content " 
+                 id="content-10">
+                <p>Article loaded successfully.</p>
+
+            </div>
+        </div>
+        <div class="message">
+            <label class="message-header" onclick="toggleMessage(11)">
+                <input type="checkbox" 
+                       class="message-checkbox" 
+                       id="message-11"
+                       
+                       onchange="toggleMessage(11)">
+                <span class="message-role user">user</span>
+                <span>115 chars - List all the tech jargon in the article, and think</span>
+            </label>
+            <div class="message-content " 
+                 id="content-11">
+                <p>List all the tech jargon in the article, and think of ways to explain it to people that are unfamiliar with tech.</p>
+
+            </div>
+        </div>
+        <div class="message">
+            <label class="message-header" onclick="toggleMessage(12)">
+                <input type="checkbox" 
+                       class="message-checkbox" 
+                       id="message-12"
+                       
+                       onchange="toggleMessage(12)">
+                <span class="message-role assistant">assistant</span>
+                <span>5748 chars - Below is a quick‑reference list of the “tech‑heavy</span>
+            </label>
+            <div class="message-content " 
+                 id="content-12">
+                <p>Below is a quick‑reference list of the “tech‑heavy” words and phrases that appear in the article, followed by a plain‑language explanation for each.  These are the bits that might feel foreign to someone who isn’t used to reading about energy policy or nuclear science.</p>
+<table>
+<thead>
+<tr>
+<th>Jargon</th>
+<th>What it really means</th>
+<th>How to explain it simply</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Executive order</strong></td>
+<td>A top‑level government directive issued by the President that can change policy or the way agencies operate.</td>
+<td>“A short letter from the President that tells the government to do something new or different.”</td>
+</tr>
+<tr>
+<td><strong>Nuclear reactors</strong></td>
+<td>Machines that split atoms to release heat, which is then turned into electricity.</td>
+<td>“A big machine that uses tiny split atoms to make heat and then power for homes and businesses.”</td>
+</tr>
+<tr>
+<td><strong>Nuclear energy technology</strong></td>
+<td>The whole set of tools, designs, and practices used to build and run reactors.</td>
+<td>“All the engineering tricks and equipment that let us safely use nuclear power.”</td>
+</tr>
+<tr>
+<td><strong>Red tape</strong></td>
+<td>Bureaucratic paperwork and regulations that slow down processes.</td>
+<td>“The paperwork and rules that make starting a new project take a long time.”</td>
+</tr>
+<tr>
+<td><strong>Approval processes</strong></td>
+<td>Steps a reactor must pass (inspection, licensing, safety checks) before it can start producing power.</td>
+<td>“All the safety checks and permissions a plant needs before it can operate.”</td>
+</tr>
+<tr>
+<td><strong>Nuclear Regulatory Commission (NRC)</strong></td>
+<td>The U.S. federal agency that sets safety rules for nuclear plants.</td>
+<td>“The government body that watches over nuclear power plants to keep them safe.”</td>
+</tr>
+<tr>
+<td><strong>Nuclear fission</strong></td>
+<td>The process of splitting an atom’s nucleus to release energy.</td>
+<td>“The splitting of a tiny piece of matter to create heat and electricity.”</td>
+</tr>
+<tr>
+<td><strong>Greenhouse gases</strong></td>
+<td>Gases that trap heat in the atmosphere, causing climate change.</td>
+<td>“Pollutants like carbon dioxide that warm the planet.”</td>
+</tr>
+<tr>
+<td><strong>Gigawatt (GW)</strong></td>
+<td>A unit of power equal to one billion watts (the amount of energy produced in one second).</td>
+<td>“A huge amount of electricity—about the power of 1,000 big homes.”</td>
+</tr>
+<tr>
+<td><strong>Megawatt (MW)</strong></td>
+<td>A million watts; a common unit for describing power plants.</td>
+<td>“The power of about 1,000 small homes.”</td>
+</tr>
+<tr>
+<td><strong>Small Modular Reactors (SMRs)</strong></td>
+<td>Compact, factory‑built nuclear reactors that can be assembled on site in pieces.</td>
+<td>“Tiny nuclear power plants that can be shipped and put together like building blocks.”</td>
+</tr>
+<tr>
+<td><strong>Microreactors</strong></td>
+<td>Even smaller reactors, usually under 20 MW, used for specialized purposes.</td>
+<td>“Very small nuclear units that might power a hospital or a small town.”</td>
+</tr>
+<tr>
+<td><strong>Construction time</strong></td>
+<td>How long it takes to build a power plant from start to finish.</td>
+<td>“The amount of time needed to put a plant together.”</td>
+</tr>
+<tr>
+<td><strong>Nuclear waste</strong></td>
+<td>Radioactive material left over after using nuclear fuel.</td>
+<td>“The “garbage” from nuclear power that remains radioactive and must be stored safely.”</td>
+</tr>
+<tr>
+<td><strong>Enriched uranium</strong></td>
+<td>Uranium that has been processed to increase the proportion of a particular isotope that can sustain a nuclear chain reaction.</td>
+<td>“Uranium that has been made “more powerful” so it can be used in reactors.”</td>
+</tr>
+<tr>
+<td><strong>Low‑level enrichment</strong></td>
+<td>Small percentage of the special isotope in natural uranium (about 0.7 %).</td>
+<td>“The natural amount of usable uranium you find in ordinary ore.”</td>
+</tr>
+<tr>
+<td><strong>High‑level enrichment</strong></td>
+<td>Higher percentages (often 20 % or more) needed for certain reactor designs.</td>
+<td>“A higher concentration of usable uranium used in more powerful reactors.”</td>
+</tr>
+<tr>
+<td><strong>Artificial Intelligence (AI)</strong></td>
+<td>Computer systems that learn from data and make decisions or predictions.</td>
+<td>“Computer programs that can learn and help solve problems, like figuring out the best fuel mix.”</td>
+</tr>
+<tr>
+<td><strong>Simulation tools</strong></td>
+<td>Computer models that let engineers test designs without building them first.</td>
+<td>“Virtual experiments that let people try out new ideas in a computer before making them real.”</td>
+</tr>
+<tr>
+<td><strong>DOE (Department of Energy)</strong></td>
+<td>The U.S. federal agency that manages energy policy, research, and nuclear weapons.</td>
+<td>“The government office that oversees all energy, including nuclear power, in the U.S.”</td>
+</tr>
+<tr>
+<td><strong>Nuclear waste storage</strong></td>
+<td>Facilities where radioactive material is kept safely for long periods.</td>
+<td>“Special underground vaults or tanks that keep dangerous nuclear “trash” sealed away.”</td>
+</tr>
+<tr>
+<td><strong>Public‑private partnership</strong></td>
+<td>When government and private companies work together on projects.</td>
+<td>“When the government and business firms team up to build something.”</td>
+</tr>
+<tr>
+<td><strong>Regulatory agency</strong></td>
+<td>A government body that sets rules and checks compliance.</td>
+<td>“An agency that creates and enforces safety or other rules.”</td>
+</tr>
+<tr>
+<td><strong>Hype bubble</strong></td>
+<td>A period when excitement and expectations about a technology are higher than what the reality supports.</td>
+<td>“A phase when people are very optimistic about something, often more than the evidence shows.”</td>
+</tr>
+</tbody></table>
+<h3>How to use these explanations</h3>
+<ul>
+<li><strong>In conversation</strong>: “Did you hear about the new nuclear reactor plans? It’s all about making a new type of ‘small modular reactor’—basically a tiny, factory‑built nuclear plant that can be shipped and put together like building blocks.”</li>
+<li><strong>In a written summary</strong>: “The article explains that the Trump administration’s executive orders are aimed at cutting bureaucratic ‘red tape’ and speeding up the approval process for nuclear reactors, but experts warn that the real hurdles are still the cost of building reactors and the safety of nuclear waste.”</li>
+<li><strong>For a presentation</strong>: “When I discuss ‘gigawatts’ and ‘megawatts,’ I’ll compare them to everyday electricity use—1 MW equals about the power of 1,000 homes.”</li>
+</ul>
+<p>Using these plain‑language descriptions helps people who aren’t tech‑savvy grasp the key ideas behind the nuclear energy debate.</p>
+
+            </div>
+        </div>
+        <div class="message">
+            <label class="message-header" onclick="toggleMessage(13)">
+                <input type="checkbox" 
+                       class="message-checkbox" 
+                       id="message-13"
+                       
+                       onchange="toggleMessage(13)">
+                <span class="message-role user">user</span>
+                <span>28 chars - Now summarize the article.
+
+</span>
+            </label>
+            <div class="message-content " 
+                 id="content-13">
+                <p>Now summarize the article.</p>
+
+            </div>
+        </div>
+        <div class="message">
+            <label class="message-header" onclick="toggleMessage(14)">
+                <input type="checkbox" 
+                       class="message-checkbox" 
+                       id="message-14"
+                       checked
+                       onchange="toggleMessage(14)">
+                <span class="message-role assistant">assistant</span>
+                <span>1730 chars - **Summary of “The U.S. is trying to kick‑start a ‘</span>
+            </label>
+            <div class="message-content expanded" 
+                 id="content-14">
+                <p><strong>Summary of “The U.S. is trying to kick‑start a ‘nuclear energy renaissance’”</strong></p>
+<p>The Trump administration issued four executive orders in May 2025 to accelerate the development of nuclear power. The orders aim to cut regulatory “red tape,” simplify the approval process, and reshape the Nuclear Regulatory Commission (NRC) so that the U.S. can reach 400 GW of domestic nuclear electricity by 2050. The goal is to make the country energy‑independent and help curb climate change, because nuclear fission produces no greenhouse gases.</p>
+<p>Key points:</p>
+<ol>
+<li><strong>Policy shift</strong> – The orders relax licensing rules, speed construction timelines, and transfer some oversight from the NRC to the executive branch.  </li>
+<li><strong>Economic challenges</strong> – Nuclear plants are still very expensive and take many years to build. Even the newest “small modular reactors” (SMRs) have high costs and uncertain economics.  </li>
+<li><strong>Industry response</strong> – Companies like Westinghouse, TerraPower, and Kairos Power are investing in new reactor designs and fuels, but the market remains in a “hype bubble.”  </li>
+<li><strong>Safety concerns</strong> – Critics warn that weakening the NRC could reduce safety oversight and that the public may be exposed to more risk.  </li>
+<li><strong>Global context</strong> – The U.S. has only had two new reactors in nearly 30 years. Internationally, nuclear power’s share of electricity has fallen, but a second surge in interest is emerging, partly due to private‑sector involvement.</li>
+</ol>
+<p>Overall, the article argues that while the administration’s push could bring nuclear power back to the U.S. grid, it faces significant technical, economic, and regulatory hurdles, and the real test will be whether the new policies can make nuclear plants cheaper, faster, and safer.</p>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleMessage(index) {
+            const checkbox = document.getElementById(`message-${index}`);
+            const content = document.getElementById(`content-${index}`);
+            
+            if (checkbox.checked) {
+                content.classList.add('expanded');
+            } else {
+                content.classList.remove('expanded');
+            }
+        }
+
+        function toggleAllMessages() {
+            const checkboxes = document.querySelectorAll('.message-checkbox');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = !allChecked;
+                const index = checkbox.id.split('-')[1];
+                toggleMessage(index);
+            });
+        }
+
+        function toggleTitles() {
+			document.body.classList.toggle('show-titles');
+        }
+
+        // Initialize: only last message should be expanded by default, hide earlier titles
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkboxes = document.querySelectorAll('.message-checkbox');
+            const headers = document.querySelectorAll('.message-header');
+            
+            checkboxes.forEach((checkbox, index) => {
+                const isLast = index === checkboxes.length - 1;
+                checkbox.checked = isLast;
+                toggleMessage(index);
+            });
+        });
+    </script>
+</body>
+</html>
