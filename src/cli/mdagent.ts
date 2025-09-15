@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { ChatRunner, type ChatRunnerConfig } from "../agents/ChatRunner";
 import { createMarkdownAgent } from "../agents/markdown/converter";
 import { runMultiPhase } from "../agents/multi-phase";
@@ -144,6 +144,7 @@ async function main() {
 			options: agent.systemConfig,
 			templateOptions: templateVars,
 			systemPrompt: agent.systemPrompt,
+			basePath: dirname(markdownPath),
 			...verboseEventListeners(),
 		});
 

@@ -24,7 +24,10 @@ export async function loadTools(
 			}
 
 			// Validate the tool structure
-			const tool = toolModule.default;
+			const tool =
+				typeof toolModule.default === "function"
+					? toolModule.default({ basePath: toolsDir })
+					: toolModule.default;
 			if (
 				!tool.name ||
 				!tool.description ||
@@ -37,7 +40,7 @@ export async function loadTools(
 				continue;
 			}
 
-			tools[toolName] = tool as Tool;
+			tools[toolName] = toolModule.default as Tool;
 		} catch (error) {
 			errors.push(
 				`Failed to load tool '${toolName}': ${error instanceof Error ? error.message : String(error)}`,

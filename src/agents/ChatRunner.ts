@@ -7,14 +7,15 @@ import type {
 import { Ollama } from "ollama";
 import { z } from "zod";
 import { saveDebugOutput } from "../outputUtils";
-import type { Phase, Tool } from "../types";
+import type { Phase, Tool, ToolFactory } from "../types";
 
 export interface ChatRunnerConfig {
 	ollamaConfig: any;
 	model: string;
-	tools: Record<string, Tool>;
+	tools: Record<string, Tool | ToolFactory>;
 	options: any;
 	systemPrompt: string;
+	basePath: string;
 	templateOptions: Record<string, any>;
 	onThinkingChunk: (chunk: string) => void;
 	onContentChunk: (chunk: string) => void;
@@ -29,11 +30,12 @@ export class ChatRunner {
 	private ollamaClient: Ollama;
 	private startTime: string;
 	private config: ChatRunnerConfig;
+	private tools: Tool[] = [];
 
 	/**
 	 * Convert tools with Zod schemas to the format expected by Ollama
 	 */
-	private convertToolsForOllama(tools: Record<string, Tool>): OllamaTool[] {
+	private convertToolsForOllama(tools: Tool[]): OllamaTool[] {
 		return Object.values(tools).map((tool) => {
 			return {
 				type: "function",
@@ -46,19 +48,16 @@ export class ChatRunner {
 		});
 	}
 
-	/**
-	 * Find a tool by its function name
-	 */
-	private findToolByName(toolName: string): Tool | undefined {
-		return Object.values(this.config.tools).find(
-			(tool) => tool.name === toolName,
-		);
-	}
-
 	constructor(config: ChatRunnerConfig) {
 		this.config = config;
 		this.startTime = new Date().toISOString();
 		this.ollamaClient = new Ollama(config.ollamaConfig);
+		this.tools = Object.values(config.tools).map((tool) => {
+			if (typeof tool === "function") {
+				tool = tool({ basePath: config.basePath });
+			}
+			return tool;
+		});
 	}
 
 	private replaceTemplateVariables(
@@ -126,9 +125,17 @@ ${z.toJSONSchema(phase.responseSchema)}`
 		this.purgedMessages.push(userMessage);
 
 		await this.saveDebugOutput();
+		const phaseTools = Object.values(phase.tools ?? {}).map((tool) => {
+			if (typeof tool === "function") {
+				tool = tool({ basePath: this.config.basePath });
+			}
+			return tool;
+		});
+
+		const tools = phaseTools.length > 0 ? phaseTools : this.tools;
 
 		// Get tool definitions for Ollama, converting Zod schemas to JSON Schema
-		const toolDefinitions = this.convertToolsForOllama(this.config.tools);
+		const toolDefinitions = this.convertToolsForOllama(tools);
 
 		let content = "";
 		let round = 0;
@@ -200,7 +207,7 @@ ${z.toJSONSchema(phase.responseSchema)}`
 
 				// Execute tools for this round
 				for (const toolCall of toolCalls) {
-					await this.executeToolWithRetry(toolCall);
+					await this.executeToolWithRetry(toolCall, tools);
 					await this.saveDebugOutput();
 				}
 			} catch (error) {
@@ -294,21 +301,20 @@ ${z.toJSONSchema(phase.responseSchema)}`
 	/**
 	 * Execute a tool call with retry logic (up to 2 retries)
 	 */
-	private async executeToolWithRetry(toolCall: ToolCall): Promise<void> {
-		const maxRetries = 2;
+	private async executeToolWithRetry(
+		toolCall: ToolCall,
+		tools: Tool[],
+	): Promise<void> {
 		let lastError: Error | null = null;
+		const tool = tools.find((tool) => tool.name === toolCall.function.name);
+		if (!tool) {
+			throw new Error(`Unknown tool: ${toolCall.function.name}`);
+		}
+		const maxRetries = tool.maxRetries ?? 2;
 
 		for (let attempt = 0; attempt <= maxRetries; attempt++) {
 			try {
 				const args = toolCall.function.arguments;
-				const tool = this.findToolByName(toolCall.function.name);
-
-				if (!tool || !tool.execute) {
-					throw new Error(
-						`Unknown tool or missing execute method: ${toolCall.function.name}`,
-					);
-				}
-
 				const result = await tool.execute(args);
 
 				// Call onToolResponse callback

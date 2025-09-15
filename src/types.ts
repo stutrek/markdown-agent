@@ -50,18 +50,28 @@ export type PhasePurge = "tool-calls" | "all-tool-calls" | "previous-messages";
 export type Tool<TInput = unknown, TResult = unknown> = {
 	name: string;
 	description: string;
+	maxRetries?: number;
 	parameters: z.ZodSchema<TInput>;
 	execute: (input: TInput) => Promise<TResult>;
 };
 
 export function tool<TInput = unknown, TResult = unknown>(t: {
 	name: string;
+	maxRetries?: number;
 	description: string;
 	parameters: z.ZodSchema<TInput>;
 	execute: (input: TInput) => Promise<TResult>;
 }): Tool<TInput, TResult> {
 	return t;
 }
+
+type ToolFactoryConfig = {
+	basePath: string;
+};
+
+export type ToolFactory<TInput = unknown, TResult = unknown> = (
+	props: ToolFactoryConfig,
+) => Tool<TInput, TResult>;
 
 export interface Phase<Name extends string = string> {
 	name: Name;
@@ -70,5 +80,5 @@ export interface Phase<Name extends string = string> {
 	think?: "low" | "medium" | "high";
 	options?: Partial<Options>;
 	responseSchema?: z.ZodSchema<unknown>;
-	tools?: Record<string, Tool>;
+	tools?: Record<string, Tool | ToolFactory>;
 }
