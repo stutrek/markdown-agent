@@ -1,6 +1,6 @@
 {
 	"name": "mdagent",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"description": "Define AI agents for Ollama using only a single markdown file",
 	"main": "dist/index.js",
 	"files": [
