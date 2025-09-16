@@ -2,7 +2,7 @@ import { XMLParser } from "fast-xml-parser";
 import { z } from "zod";
 import { tool } from "../types";
 
-export async function fetchRss(
+export async function doFetchRss(
 	urls: string | string[],
 	date?: Date,
 ): Promise<string> {
@@ -95,8 +95,8 @@ const fetchRssToolSchema = z.object({
 		.optional(),
 });
 
-export const fetchRssTool = tool({
-	name: "fetch_rss",
+export const fetchRss = tool({
+	name: "fetchRss",
 	description: "Fetch one or more RSS/Atom feeds and return recent items.",
 	parameters: fetchRssToolSchema,
 	async execute(input) {
@@ -107,7 +107,7 @@ export const fetchRssTool = tool({
 				? new Date(validatedInput.date)
 				: undefined;
 
-			const result = await fetchRss(validatedInput.urls, date);
+			const result = await doFetchRss(validatedInput.urls, date);
 			return result;
 		} catch (error) {
 			throw new Error(
@@ -116,4 +116,3 @@ export const fetchRssTool = tool({
 		}
 	},
 });
-export default fetchRssTool;

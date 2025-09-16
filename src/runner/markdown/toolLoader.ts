@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { builtInTools } from "../../tools";
 import type { Tool } from "../../types";
 
 /**
@@ -6,15 +7,22 @@ import type { Tool } from "../../types";
  */
 export async function loadTools(
 	toolNames: string[],
-	toolsDir: string,
+	basePath: string,
 ): Promise<Record<string, Tool>> {
 	const tools: Record<string, Tool> = {};
 	const errors: string[] = [];
 
 	// Load each tool
 	for (const toolName of toolNames) {
+		if (toolName in builtInTools) {
+			const tool = builtInTools[toolName as keyof typeof builtInTools];
+			tools[toolName] = (
+				typeof tool === "function" ? tool({ basePath }) : tool
+			) as Tool;
+			continue;
+		}
 		try {
-			const toolPath = resolve(toolsDir, `${toolName}.ts`);
+			const toolPath = resolve(basePath, `${toolName}`);
 			const toolModule = await import(toolPath);
 
 			// Check if tool has a default export
@@ -26,7 +34,7 @@ export async function loadTools(
 			// Validate the tool structure
 			const tool =
 				typeof toolModule.default === "function"
-					? toolModule.default({ basePath: toolsDir })
+					? toolModule.default({ basePath })
 					: toolModule.default;
 			if (
 				!tool.name ||

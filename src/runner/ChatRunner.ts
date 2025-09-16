@@ -196,7 +196,7 @@ ${z.toJSONSchema(phase.responseSchema)}`
 
 				// Execute tools for this round
 				for (const toolCall of toolCalls) {
-					await this.executeToolWithRetry(toolCall, tools);
+					await this.executeTool(toolCall, tools);
 					await this.saveDebugOutput();
 				}
 			} catch (error) {
@@ -290,69 +290,44 @@ ${z.toJSONSchema(phase.responseSchema)}`
 	/**
 	 * Execute a tool call with retry logic (up to 2 retries)
 	 */
-	private async executeToolWithRetry(
-		toolCall: ToolCall,
-		tools: Tool[],
-	): Promise<void> {
-		let lastError: Error | null = null;
+	private async executeTool(toolCall: ToolCall, tools: Tool[]): Promise<void> {
 		const tool = tools.find((tool) => tool.name === toolCall.function.name);
 		if (!tool) {
 			throw new Error(`Unknown tool: ${toolCall.function.name}`);
 		}
-		const maxRetries = tool.maxRetries ?? 2;
 
-		for (let attempt = 0; attempt <= maxRetries; attempt++) {
-			try {
-				const args = toolCall.function.arguments;
-				const result = await tool.execute(args);
+		try {
+			const args = toolCall.function.arguments;
+			const result = await tool.execute(args);
 
-				// Call onToolResponse callback
-				this.config.onToolResponse(result);
+			// Call onToolResponse callback
+			this.config.onToolResponse(result);
 
-				// Add tool result to messages for next round
-				const toolMessage = {
-					role: "tool",
-					content: typeof result === "string" ? result : JSON.stringify(result),
-					tool_name: toolCall.function.name,
-				} as Message;
+			// Add tool result to messages for next round
+			const toolMessage = {
+				role: "tool",
+				content: typeof result === "string" ? result : JSON.stringify(result),
+				tool_name: toolCall.function.name,
+			} as Message;
 
-				this.messages.push(toolMessage);
-				this.purgedMessages.push(toolMessage);
+			this.messages.push(toolMessage);
+			this.purgedMessages.push(toolMessage);
 
-				// Success - no need to retry
-				return;
-			} catch (error) {
-				lastError = error instanceof Error ? error : new Error(String(error));
+			// Success - no need to retry
+			return;
+		} catch (error) {
+			// Send retry request to AI
+			const retryMsg = `Tool execution failed: ${error instanceof Error ? error.message : String(error)}. Please retry this tool call.`;
+			this.config.onToolResponse(retryMsg);
 
-				// If this is the last attempt, send final error
-				if (attempt === maxRetries) {
-					const errorMsg = `Tool execution failed after ${maxRetries + 1} attempts: ${lastError.message}`;
-					this.config.onToolResponse(errorMsg);
+			const retryToolMessage = {
+				role: "tool",
+				content: `Error: ${retryMsg}`,
+				tool_name: toolCall.function.name,
+			} as Message;
 
-					// Send final error back to AI as tool response
-					const errorToolMessage = {
-						role: "tool",
-						content: `Error: ${errorMsg}`,
-						tool_name: toolCall.function.name,
-					} as Message;
-
-					this.messages.push(errorToolMessage);
-					this.purgedMessages.push(errorToolMessage);
-				} else {
-					// Send retry request to AI
-					const retryMsg = `Tool execution failed (attempt ${attempt + 1}/${maxRetries + 1}): ${lastError.message}. Please retry this tool call.`;
-					this.config.onToolResponse(retryMsg);
-
-					const retryToolMessage = {
-						role: "tool",
-						content: `Error: ${retryMsg}`,
-						tool_name: toolCall.function.name,
-					} as Message;
-
-					this.messages.push(retryToolMessage);
-					this.purgedMessages.push(retryToolMessage);
-				}
-			}
+			this.messages.push(retryToolMessage);
+			this.purgedMessages.push(retryToolMessage);
 		}
 	}
 }

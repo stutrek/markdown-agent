@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import type { z } from "zod";
 import type { Phase, Tool } from "../../types";
 import { parseMarkdownAgent } from "./parser";
@@ -15,6 +15,7 @@ export async function createMarkdownAgent(markdownPath: string): Promise<{
 	systemPrompt: string;
 	systemConfig: z.infer<typeof systemConfigSchema>;
 }> {
+	const baseDir = dirname(markdownPath);
 	// Read and parse the markdown file
 	let markdownContent: string;
 	try {
@@ -30,9 +31,8 @@ export async function createMarkdownAgent(markdownPath: string): Promise<{
 	// Load system tools if specified
 	let systemTools: Record<string, Tool> = {};
 	if (parsed.systemConfig.tools && parsed.systemConfig.tools.length > 0) {
-		const toolsDir = resolve(__dirname, "../../tools");
 		try {
-			systemTools = await loadTools(parsed.systemConfig.tools, toolsDir);
+			systemTools = await loadTools(parsed.systemConfig.tools, baseDir);
 		} catch (error) {
 			throw new Error(
 				`Failed to load system tools: ${error instanceof Error ? error.message : String(error)}`,
@@ -51,9 +51,8 @@ export async function createMarkdownAgent(markdownPath: string): Promise<{
 			// Load phase-specific tools if specified
 			let phaseTools: Record<string, Tool> = {};
 			if (phase.config?.tools && phase.config.tools.length > 0) {
-				const toolsDir = resolve(__dirname, "../../tools");
 				try {
-					phaseTools = await loadTools(phase.config.tools, toolsDir);
+					phaseTools = await loadTools(phase.config.tools, baseDir);
 				} catch (error) {
 					throw new Error(
 						`Failed to load tools for phase '${phase.name}': ${error instanceof Error ? error.message : String(error)}`,

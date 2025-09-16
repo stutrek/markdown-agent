@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .messages-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .message {
+			display: none;
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+		.show-titles .message,
+		.message:last-child {
+			display: block;
+		}
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e1e5e9;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .message-header:hover {
+            background: #e9ecef;
+        }
+
+        .message-checkbox {
+            margin-right: 12px;
+            transform: scale(1.1);
+        }
+
+        .message-role {
+            font-weight: 600;
+            color: #495057;
+            text-transform: capitalize;
+            margin-right: 8px;
+        }
+
+        .message-role.system {
+            border-left: #6c757d;
+        }
+
+        .message-role.user {
+            border-left: #007bff;
+        }
+
+        .message-role.assistant {
+            border-left: #28a745;
+        }
+
+        .message-role.tool {
+            border-left: #fd7e14;
+        }
+
+        .message-content {
+            display: none;
+            padding: 16px;
+            border-top: 1px solid #e1e5e9;
+        }
+
+        .message-content.expanded {
+            display: block;
+        }
+
+        .message-content h1,
+        .message-content h2,
+        .message-content h3,
+        .message-content h4,
+        .message-content h5,
+        .message-content h6 {
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+
+        .message-content p {
+            margin-bottom: 12px;
+        }
+
+        .message-content pre {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 12px;
+            overflow-x: auto;
+            margin-bottom: 12px;
+        }
+
+        .message-content code {
+            background: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+
+        .message-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .message-content ul,
+        .message-content ol {
+            margin-bottom: 12px;
+            padding-left: 20px;
+        }
+
+        .message-content li {
+            margin-bottom: 4px;
+        }
+
+        .message-content blockquote {
+            border-left: 4px solid #007bff;
+            padding-left: 16px;
+            margin: 16px 0;
+            color: #6c757d;
+        }
+
+        .message-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+        }
+
+        .message-content th,
+        .message-content td {
+            border: 1px solid #dee2e6;
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        .message-content th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .expand-all {
+			display: none;
+            background: #007bff;
+        }
+		.show-titles .expand-all {
+			display: block;
+		}
+
+        .expand-all:hover {
+            background: #0056b3;
+        }
+
+        .expand-all:active {
+            transform: translateY(1px);
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+		.button {
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+		}
+
+        .toggle-titles {
+            background: #6c757d;
+            color: white;
+        }
+
+        .toggle-titles:hover {
+            background: #5a6268;
+        }
+
+        .toggle-titles:active {
+            transform: translateY(1px);
+        }
+
+        .message-header.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="messages-container">
+        <div class="controls">
+			<button class="toggle-titles button" onclick="toggleTitles()">Show All Messages</button>
+            <button class="expand-all button" onclick="toggleAllMessages()">Expand All Messages</button>
+        </div>
+        
+        <div class="message">
+            <label class="message-header" onclick="toggleMessage(0)">
+                <input type="checkbox" 
+                       class="message-checkbox" 
+                       id="message-0"
+                       
+                       onchange="toggleMessage(0)">
+                <span class="message-role system">system</span>
+                <span></span>
+            </label>
+            <div class="message-content " 
+                 id="content-0">
+                <p>You are a greeter.</p>
+
+            </div>
+        </div>
+        <div class="message">
+            <label class="message-header" onclick="toggleMessage(1)">
+                <input type="checkbox" 
+                       class="message-checkbox" 
+                       id="message-1"
+                       
+                       onchange="toggleMessage(1)">
+                <span class="message-role user">user</span>
+                <span>137 chars - Pick any name, it could be a person, a cartoon cha</span>
+            </label>
+            <div class="message-content " 
+                 id="content-1">
+                <p>Pick any name, it could be a person, a cartoon character, or a dog. Call <code>customTool</code> to get the proper greeting for them and print it.</p>
+
+            </div>
+        </div>
+        <div class="message">
+            <label class="message-header" onclick="toggleMessage(2)">
+                <input type="checkbox" 
+                       class="message-checkbox" 
+                       id="message-2"
+                       
+                       onchange="toggleMessage(2)">
+                <span class="message-role assistant">assistant</span>
+                <span>customTool - {&quot;name&quot;:&quot;Charlie&quot;}</span>
+            </label>
+            <div class="message-content " 
+                 id="content-2">
+                <pre>[
+  {
+    "function": {
+      "name": "customTool",
+      "arguments": {
+        "name": "Charlie"
+      }
+    }
+  }
+]</pre>
+            </div>
+        </div>
+        <div class="message">
+            <label class="message-header" onclick="toggleMessage(3)">
+                <input type="checkbox" 
+                       class="message-checkbox" 
+                       id="message-3"
+                       
+                       onchange="toggleMessage(3)">
+                <span class="message-role tool">tool</span>
+                <span>15 chars - customTool - Hello, Charlie!</span>
+            </label>
+            <div class="message-content " 
+                 id="content-3">
+                <p>Hello, Charlie!</p>
+
+            </div>
+        </div>
+        <div class="message">
+            <label class="message-header" onclick="toggleMessage(4)">
+                <input type="checkbox" 
+                       class="message-checkbox" 
+                       id="message-4"
+                       checked
+                       onchange="toggleMessage(4)">
+                <span class="message-role assistant">assistant</span>
+                <span>15 chars - Hello, Charlie!</span>
+            </label>
+            <div class="message-content expanded" 
+                 id="content-4">
+                <p>Hello, Charlie!</p>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleMessage(index) {
+            const checkbox = document.getElementById(`message-${index}`);
+            const content = document.getElementById(`content-${index}`);
+            
+            if (checkbox.checked) {
+                content.classList.add('expanded');
+            } else {
+                content.classList.remove('expanded');
+            }
+        }
+
+        function toggleAllMessages() {
+            const checkboxes = document.querySelectorAll('.message-checkbox');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = !allChecked;
+                const index = checkbox.id.split('-')[1];
+                toggleMessage(index);
+            });
+        }
+
+        function toggleTitles() {
+			document.body.classList.toggle('show-titles');
+        }
+
+        // Initialize: only last message should be expanded by default, hide earlier titles
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkboxes = document.querySelectorAll('.message-checkbox');
+            const headers = document.querySelectorAll('.message-header');
+            
+            checkboxes.forEach((checkbox, index) => {
+                const isLast = index === checkboxes.length - 1;
+                checkbox.checked = isLast;
+                toggleMessage(index);
+            });
+        });
+    </script>
+</body>
+</html>

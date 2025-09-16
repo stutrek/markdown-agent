@@ -22,7 +22,7 @@ turndown.remove([
 	"picture",
 ]);
 
-export async function fetchUrls(
+export async function doFetchTools(
 	urls:
 		| string
 		| Array<string | { url: string; content?: string; exclude?: string[] }>,
@@ -107,8 +107,8 @@ const fetchUrlsToolSchema = z.object({
 });
 
 // Convert to Ollama tool format using Zod schema
-export const fetchUrlsTool = tool({
-	name: "fetch_urls",
+export const fetchUrls = tool({
+	name: "fetchUrls",
 	description: "Fetch one or more URLs and return text content.",
 	parameters: fetchUrlsToolSchema,
 	async execute(input: z.infer<typeof fetchUrlsToolSchema>): Promise<string> {
@@ -116,7 +116,7 @@ export const fetchUrlsTool = tool({
 			// Validate input using Zod schema
 			const validatedInput = fetchUrlsToolSchema.parse(input);
 
-			const result = await fetchUrls(validatedInput.urls);
+			const result = await doFetchTools(validatedInput.urls);
 			return result;
 		} catch (error) {
 			throw new Error(
@@ -125,5 +125,3 @@ export const fetchUrlsTool = tool({
 		}
 	},
 });
-
-export default fetchUrlsTool;

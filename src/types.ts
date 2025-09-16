@@ -50,14 +50,12 @@ export type PhasePurge = "tool-calls" | "all-tool-calls" | "previous-messages";
 export type Tool<TInput = unknown, TResult = unknown> = {
 	name: string;
 	description: string;
-	maxRetries?: number;
 	parameters: z.ZodSchema<TInput>;
 	execute: (input: TInput) => Promise<TResult>;
 };
 
 export function tool<TInput = unknown, TResult = unknown>(t: {
 	name: string;
-	maxRetries?: number;
 	description: string;
 	parameters: z.ZodSchema<TInput>;
 	execute: (input: TInput) => Promise<TResult>;

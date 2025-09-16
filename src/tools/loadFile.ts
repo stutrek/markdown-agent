@@ -12,7 +12,6 @@ export const loadFile: ToolFactory<z.infer<typeof parametersSchema>, string> = (
 ) =>
 	tool({
 		name: "load_file",
-		maxRetries: 0,
 		description: "Load a file from the file system",
 		parameters: parametersSchema,
 		async execute(input) {
@@ -47,5 +46,3 @@ export const loadFile: ToolFactory<z.infer<typeof parametersSchema>, string> = (
 			return file;
 		},
 	});
-
-export default loadFile;
