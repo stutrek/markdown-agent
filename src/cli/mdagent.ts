@@ -89,14 +89,12 @@ async function main() {
 
 	if (args.length === 0) {
 		console.log(
-			"Usage: mdagent <markdown-file> [--verbose] [template-variables...]",
+			"Usage: mdagent <markdown-file> [--silent] [template-variables...]",
 		);
 		console.log("");
 		console.log("Examples:");
 		console.log('  mdagent ./my-agent.md --topic "AI" --date "2025-01-15"');
-		console.log(
-			"  mdagent ./my-agent.md --verbose --section tech --priority high",
-		);
+		console.log("  mdagent ./my-agent.md --section tech --priority high");
 		console.log("");
 		console.log("Template variables are passed as key-value pairs:");
 		console.log("  --key value  or  key value");
@@ -106,12 +104,13 @@ async function main() {
 	const markdownFile = args[0];
 	const remainingArgs = args.slice(1);
 
-	// Check for verbose flag
-	const verboseIndex = remainingArgs.indexOf("--verbose");
-	const verbose = verboseIndex !== -1;
-	if (verbose) {
-		remainingArgs.splice(verboseIndex, 1);
+	// Check for silent flag
+	const silentIndex = remainingArgs.indexOf("--silent");
+	const silent = silentIndex !== -1;
+	if (silent) {
+		remainingArgs.splice(silentIndex, 1);
 	}
+	const verbose = !silent;
 
 	try {
 		// Resolve the markdown file path

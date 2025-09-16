@@ -1,8 +1,14 @@
 {
-	"name": "markdown-agent",
-	"version": "1.0.0",
+	"name": "mdagent",
+	"version": "0.0.1",
 	"description": "Define AI agents for Ollama using only a single markdown file",
-	"main": "index.js",
+	"main": "dist/index.js",
+	"files": [
+		"dist"
+	],
+	"bin": {
+		"mdagent": "dist/cli/mdagent.js"
+	},
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"build": "tsc",
@@ -11,7 +17,8 @@
 		"lint:fix": "biome check --write .",
 		"format": "biome format --write .",
 		"clean": "rm -rf dist",
-		"render-debug": "npx ts-node render-debug.ts"
+		"render-debug": "npx ts-node render-debug.ts",
+		"prepublishOnly": "npm run clean && npm run lint && npm run format && npm run build"
 	},
 	"author": "Stu Kabakoff <stutrek@gmail.com>",
 	"license": "MIT",
