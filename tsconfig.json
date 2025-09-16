@@ -18,6 +18,5 @@
 		"incremental": true,
 		"target": "es2022"
 	},
-	"include": ["src/**/*"],
-	"assets": ["**/*.hbs", "**/*.md"]
+	"include": ["src/**/*"]
 }
