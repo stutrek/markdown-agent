@@ -1,96 +1,101 @@
 # Markdown Agent
 
-This is a simple way to create an AI agent using a local AI. Define an AI agent using a single markdown file and plain English, run it with a single command, and get the result rendered into an HTML file.
+**Markdown Agent** is a simple way to create and run AI agents using plain Markdown files. You write your agent’s behavior in everyday English (with some optional configuration in YAML), run it from the command line, and the results are saved as an HTML file.  
 
-It comes with a list of versatile tools, allowing you to load URLs, RSS feeds, and load data from files.
+It comes with a set of built-in tools for fetching URLs, reading RSS feeds, and loading local files. You can also extend it with your own tools in Node.js.
 
-AI calls are handled by [Ollama](https://ollama.com). Settings can be changed using yaml blocks in your agent.
+AI calls are handled by [Ollama](https://ollama.com). Models and settings are controlled via YAML blocks in your Markdown agent.
 
 ## Installation
 
-Install [Node.js](https://nodejs.org/en) using your favorite method.
-Install [Ollama](https://ollama.com) and download a model using their instructions.
+1. Install [Node.js](https://nodejs.org/en) (use any method you prefer).  
+2. Install [Ollama](https://ollama.com) and download at least one model (follow their instructions).  
+3. Install Markdown Agent globally:  
 
 ```bash
-npm install -G mdagent
+npm install -g mdagent
 ```
 
-## Basic Example
+## Quick Start Example
 
-_see [the examples](./examples) for a more detailed examples_
-
-Create an md file like this:
+Create a file called `my-agent.md`:
 
 ```md
 # System
 
 ```yaml
 model: gpt-oss:20b
-
 tools:
   - fetchRss
-```
+\``` <-- remove the backslash
 
 You are an editor that finds interesting articles to read. Today is {{CURRENT_DATE}}.
 
 # Find topics
 
-Load yesterday's RSS articles from `https://feeds.arstechnica.com/arstechnica/index`, and find two quirky, unique articles to read. Print their titles and urls.
+Load yesterday's RSS articles from `https://feeds.arstechnica.com/arstechnica/index` and pick two quirky, unique articles. Print their titles and URLs.
 ```
 
-Then run `mdagent`.
+Run the agent:
 
 ```bash
-mdagent my-file.md
+mdagent my-agent.md
 ```
 
-## Creating markdown agents
+This will create a new HTML file in the `output` directory containing the full conversation and results.
 
-The most basic markdown agent contains two h1 (#) headers.
+> 💡 See [examples](./examples) for more complete samples.
 
-The first section must start with # System, and it defines the system prompt, which tells the AI the agent's mission, and how it should behave. The second header is the "user" prompt. It asks the AI to do something. Following headers are run in order, being appended to the output of the previous sections. When the process is complete, a new file will appear in an `output` directory containing the entire conversation as HTML.
+## Writing Markdown Agents
+
+A Markdown agent is just a Markdown file with sections. The two main sections are:
+
+1. **System section** (`# System`) – sets the agent’s role, model, and configuration.  
+2. **User sections** (`# Something`) – instructions for the agent, written in plain English.  
+
+Each additional `# Header` is run in order, with the output of one section passed into the next. When finished, the full run is saved as an HTML file in the `output` directory.
 
 ## Configuration
 
-The system prompt, and all user prompts take configuration in a yaml block.
+Configuration is written inside YAML blocks at the top of a section. For example:
 
 ```yaml
 model: gpt-oss:20b
 think: medium
 
-# ollama model options, these particular settings require 16gb of free memory
+# Advanced Ollama options (example: requires 16GB free memory)
 seed: 42
 num_ctx: 65536
 num_predict: 16384
 top_k: 40
 top_p: 0.9
 
-# if your agent needs CLI arguments, configure them here.
-# for example `mdagent ./my-markdown.md --date 2025-09-15 --section tech
+# Pass arguments to your agent from the CLI
+# Example: mdagent my-agent.md --date 2025-09-15 --section tech
 input:
   - date
   - section
 
-# the tool calls that your agent can call.
-# these can be the predefined tool calls or paths relative to the markdown file.
+# Tools available to this agent
 tools:
   - fetchRss
-  - fetchUrls
+  - fetchUrl
+  - loadFile
 ```
 
-## Built in tools
+## Built-in Tools
 
-- **fetchUrl** - fetches any url. If it's HTML it will be converted to markdown. Takes parameters for a CSS selector of the content, and CSS selectors to remove.
-- **fetchRss** - fetches an RSS feed, optionally filter it to a single day
-- **loadFile** - loads the contents of the file into the agent's context. The file must be next to, or in a folder next to, your markdown file.
+- **fetchUrl** – fetches a webpage. Converts HTML to Markdown. Supports options for selecting which parts to keep or remove with CSS selectors.  
+- **fetchRss** – fetches an RSS feed, with optional filtering by date.  
+- **loadFile** – loads the content of a local file into the agent’s context. Files must be in the same directory (or a sibling folder) as your Markdown file.  
 
-## Custom tools
+## Custom Tools
 
-To implement custom logic, or even call other models, you can define a custom tool. They have the full power of Node.js. 
+You can extend Markdown Agent with your own tools in Node.js. A custom tool has:
 
-A tool consists of 
+- **A name** – how the agent refers to it.  
+- **A description** – tells the AI when it should use this tool.  
+- **An input schema** – defined with [Zod](https://zod.dev/).  
+- **An `execute` function** – the code that actually runs when the tool is called.  
 
-- a tool name
-- a description, telling the AI when it should use the tool
-- a schema for input, defined using [zod](https://zod.dev/)
-- an execute function, which will be called by the AI.
+This makes it possible to add custom logic, fetch data from APIs, or even call other models.
