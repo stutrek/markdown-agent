@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import type { z } from "zod";
+import { builtInTools } from "../../tools";
 import type { Phase, Tool } from "../../types";
 import { parseMarkdownAgent } from "./parser";
 import { loadTools } from "./toolLoader";
@@ -35,7 +36,7 @@ export async function createMarkdownAgent(markdownPath: string): Promise<{
 			systemTools = await loadTools(parsed.systemConfig.tools, baseDir);
 		} catch (error) {
 			throw new Error(
-				`Failed to load system tools: ${error instanceof Error ? error.message : String(error)}`,
+				`Failed to load system tools, available tools: ${Object.keys(builtInTools).join(", ")}: ${error instanceof Error ? error.message : String(error)}`,
 			);
 		}
 	}

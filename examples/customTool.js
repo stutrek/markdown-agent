@@ -1,7 +1,19 @@
 import { z } from "zod";
-import { tool } from "../src/types";
+// if using typescript, use the `tool` function to verify types.
+// import { tool } from "mdagent/dist/types.js";
+// export const customTool = tool({
+//   name: "customTool",
+//   description: "A custom tool",
+//   parameters: z.object({
+//     name: z.string(),
+//   }),
+//   async execute(input) {
+//     return `Hello, ${input.name}!`;
+//   },
+// });
+// export default customTool;
 
-export const customTool = tool({
+export const customTool = {
 	name: "customTool",
 	description: "A custom tool",
 	parameters: z.object({
@@ -10,6 +22,6 @@ export const customTool = tool({
 	async execute(input) {
 		return `Hello, ${input.name}!`;
 	},
-});
+};
 
 export default customTool;

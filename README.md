@@ -79,13 +79,13 @@ input:
 # Tools available to this agent
 tools:
   - fetchRss
-  - fetchUrl
+  - fetchUrls
   - loadFile
 ```
 
 ## Built-in Tools
 
-- **fetchUrl** – fetches a webpage. Converts HTML to Markdown. Supports options for selecting which parts to keep or remove with CSS selectors.  
+- **fetchUrls** – fetches one or more webpages. Converts HTML to Markdown. Supports options for selecting which parts to keep or remove with CSS selectors.  
 - **fetchRss** – fetches an RSS feed, with optional filtering by date.  
 - **loadFile** – loads the content of a local file into the agent’s context. Files must be in the same directory (or a sibling folder) as your Markdown file.  
 
