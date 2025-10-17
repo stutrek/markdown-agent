@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import Handlebars from "handlebars";
 import { marked } from "marked";
-import type { Message } from "ollama";
+import type { Message } from "../../types";
 
 const template = readFileSync(resolve(__dirname, "template.hbs"), "utf8");
 
@@ -22,7 +22,7 @@ Handlebars.registerHelper("add", (a: number, b: number) => {
 });
 
 Handlebars.registerHelper("getMessageName", (message: Message) => {
-	const { role, tool_calls, tool_name } = message;
+	const { role, tool_calls, name } = message;
 	switch (role) {
 		case "user":
 			return `${message.content.length} chars - ${message.content.substring(0, 50)}`;
@@ -38,7 +38,7 @@ Handlebars.registerHelper("getMessageName", (message: Message) => {
 			}
 			return `${message.content.length} chars - ${message.content.substring(0, 50)}`;
 		case "tool":
-			return `${message.content.length} chars - ${tool_name || "unknown"} - ${message.content.substring(0, 50)}`;
+			return `${message.content.length} chars - ${name || "unknown"} - ${message.content.substring(0, 50)}`;
 		default:
 			return "";
 	}

@@ -137,8 +137,12 @@ async function main() {
 
 		// Create the chat runner
 		const runner = new ChatRunner({
-			ollamaConfig: {
-				host: process.env.OLLAMA_BASE_URL || "http://localhost:11434",
+			apiConfig: {
+				baseURL:
+					process.env.OPENAI_BASE_URL ||
+					process.env.OLLAMA_BASE_URL ||
+					"http://localhost:11434/v1",
+				apiKey: process.env.OPENAI_API_KEY || "ollama",
 			},
 			model: agent.systemConfig.model ?? "gpt-oss:20b",
 			tools: agent.tools,

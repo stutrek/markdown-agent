@@ -1,5 +1,26 @@
-import type { Message, Options } from "ollama";
 import type z from "zod";
+
+// Define our own Message type that matches OpenAI's structure
+export type Message = {
+	role: "system" | "user" | "assistant" | "tool";
+	content: string;
+	tool_calls?: ToolCall[];
+	tool_call_id?: string; // For tool messages
+	name?: string; // For tool messages (function name)
+};
+
+// Define ToolCall type that matches OpenAI's structure
+export type ToolCall = {
+	id: string;
+	type: "function";
+	function: {
+		name: string;
+		arguments: string; // JSON string, not parsed object
+	};
+};
+
+// Flexible config type that accepts any parameter
+export type ModelOptions = Record<string, any>;
 
 // Augment the base message types with themeMeta
 export type TimestampedSystemMessage = Message & {
@@ -29,13 +50,8 @@ export type TimestampedMessage =
 	| TimestampedAssistantMessage
 	| TimestampedToolMessage;
 
-// Ollama tool call types
-export type OllamaToolCall = {
-	function: {
-		name: string;
-		arguments: string;
-	};
-};
+// Legacy type alias - use ToolCall instead
+export type OllamaToolCall = ToolCall;
 
 export type OllamaToolResult<TInput = any, TResult = any> = {
 	toolName: string;
@@ -76,7 +92,7 @@ export interface Phase<Name extends string = string> {
 	prompt: string;
 	purge?: readonly PhasePurge[];
 	think?: "low" | "medium" | "high";
-	options?: Partial<Options>;
+	options?: Partial<ModelOptions>;
 	responseSchema?: z.ZodSchema<unknown>;
 	tools?: Record<string, Tool | ToolFactory>;
 }

@@ -1,26 +1,65 @@
 import { z } from "zod";
 
-// Base Ollama options schema
-const ollamaOptionsSchema = z.object({
-	model: z.string().optional(),
-	think: z.enum(["low", "medium", "high"]).optional(),
-	seed: z.number().optional(),
-	num_ctx: z.number().optional(),
-	num_predict: z.number().optional(),
-	top_k: z.number().optional(),
-	top_p: z.number().optional(),
-});
+// Flexible model options schema supporting both Ollama and OpenAI
+const modelOptionsSchema = z
+	.object({
+		// Core model parameter
+		model: z.string().optional(),
+
+		// Thinking/reasoning (custom, mapped to reasoning_effort for OpenAI)
+		think: z.enum(["low", "medium", "high"]).optional(),
+
+		// Common parameters (both APIs)
+		temperature: z.number().optional(),
+		top_p: z.number().optional(),
+		seed: z.number().optional(),
+		stop: z.union([z.string(), z.array(z.string())]).optional(),
+
+		// Ollama-specific parameters
+		num_ctx: z.number().optional(),
+		num_predict: z.number().optional(),
+		top_k: z.number().optional(),
+		repeat_penalty: z.number().optional(),
+		repeat_last_n: z.number().optional(),
+		tfs_z: z.number().optional(),
+		mirostat: z.number().optional(),
+		mirostat_tau: z.number().optional(),
+		mirostat_eta: z.number().optional(),
+		num_thread: z.number().optional(),
+		num_gpu: z.number().optional(),
+		num_gqa: z.number().optional(),
+		num_batch: z.number().optional(),
+		num_keep: z.number().optional(),
+
+		// OpenAI-specific parameters
+		max_tokens: z.number().optional(),
+		max_completion_tokens: z.number().optional(),
+		reasoning_effort: z.enum(["minimal", "low", "medium", "high"]).optional(),
+		frequency_penalty: z.number().optional(),
+		presence_penalty: z.number().optional(),
+		logit_bias: z.record(z.string(), z.number()).optional(),
+		logprobs: z.boolean().optional(),
+		top_logprobs: z.number().optional(),
+		n: z.number().optional(),
+		user: z.string().optional(),
+		response_format: z
+			.object({
+				type: z.enum(["text", "json_object"]).optional(),
+			})
+			.optional(),
+	})
+	.passthrough(); // Allow any additional undocumented parameters
 
 // System config schema
 export const systemConfigSchema = z.object({
-	...ollamaOptionsSchema.shape,
+	...modelOptionsSchema.shape,
 	input: z.array(z.string()).optional(),
 	tools: z.array(z.string()).optional(),
 });
 
 // Phase config schema (extends system config with phase-specific options)
 export const phaseConfigSchema = z.object({
-	...ollamaOptionsSchema.shape,
+	...modelOptionsSchema.shape,
 	input: z.array(z.string()).optional(),
 	tools: z.array(z.string()).optional(),
 	purge: z

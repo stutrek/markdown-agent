@@ -31,7 +31,7 @@ export async function saveDebugOutput(
 		metadata: {
 			totalMessages: messages.length,
 			phases: messages.filter((m) => m.role === "system").length,
-			hasThinking: messages.some((m) => !!m.thinking),
+			hasThinking: false, // OpenAI doesn't stream thinking
 		},
 	};
 

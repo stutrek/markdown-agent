@@ -1,6 +1,5 @@
-import type { Message } from "ollama";
 // import { saveDebugOutput } from "../outputUtils";
-import type { Phase } from "../types";
+import type { Message, Phase } from "../types";
 import type { ChatRunner } from "./ChatRunner";
 
 export type { Phase };

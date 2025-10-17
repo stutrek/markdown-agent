@@ -1,17 +1,19 @@
+import OpenAI from "openai";
 import type {
-	ChatRequest,
-	Message,
-	Tool as OllamaTool,
-	ToolCall,
-} from "ollama";
-import { Ollama } from "ollama";
+	ChatCompletionMessageParam,
+	ChatCompletionTool,
+} from "openai/resources/chat/completions";
 import { z } from "zod";
 import { saveDebugOutput } from "../outputUtils";
-import type { Phase, Tool, ToolFactory } from "../types";
+import type { Message, Phase, Tool, ToolCall, ToolFactory } from "../types";
+import { ensureOllamaModel } from "./ollama-model-manager";
 import { replaceTemplateVariables } from "./utils";
 
 export interface ChatRunnerConfig {
-	ollamaConfig: any;
+	apiConfig: {
+		baseURL: string;
+		apiKey?: string;
+	};
 	model: string;
 	tools: Record<string, Tool | ToolFactory>;
 	options: any;
@@ -29,15 +31,16 @@ export interface ChatRunnerConfig {
 export class ChatRunner {
 	private messages: Message[] = []; // Complete message history
 	private purgedMessages: Message[] = []; // Purged message history for AI context
-	private ollamaClient: Ollama;
+	private openaiClient: OpenAI;
 	private config: ChatRunnerConfig;
 	private tools: Tool[] = [];
+	private notifiedToolCallIds = new Set<string>();
 	startTime: string;
 
 	/**
-	 * Convert tools with Zod schemas to the format expected by Ollama
+	 * Convert tools with Zod schemas to the format expected by OpenAI
 	 */
-	private convertToolsForOllama(tools: Tool[]): OllamaTool[] {
+	private convertToolsForAPI(tools: Tool[]): ChatCompletionTool[] {
 		return Object.values(tools).map((tool) => {
 			return {
 				type: "function",
@@ -46,20 +49,98 @@ export class ChatRunner {
 					description: tool.description,
 					parameters: z.toJSONSchema(tool.parameters),
 				},
-			} as OllamaTool;
+			} as ChatCompletionTool;
 		});
 	}
 
 	constructor(config: ChatRunnerConfig) {
 		this.config = config;
 		this.startTime = new Date().toISOString();
-		this.ollamaClient = new Ollama(config.ollamaConfig);
+		this.openaiClient = new OpenAI({
+			baseURL: config.apiConfig.baseURL,
+			apiKey: config.apiConfig.apiKey,
+		});
 		this.tools = Object.values(config.tools).map((tool) => {
 			if (typeof tool === "function") {
 				tool = tool({ basePath: config.basePath });
 			}
 			return tool;
 		});
+	}
+
+	/**
+	 * Map options to OpenAI parameters using passthrough approach
+	 */
+	private mapOptionsToOpenAI(phase: Phase): Record<string, any> {
+		const mergedOptions = {
+			...this.config.options,
+			...(phase.options ?? {}),
+		};
+
+		const result: Record<string, any> = {};
+
+		// Map think to reasoning_effort
+		const thinkLevel = phase.think ?? mergedOptions.think;
+		if (thinkLevel === "low") result.reasoning_effort = "minimal";
+		else if (thinkLevel === "medium") result.reasoning_effort = "medium";
+		else if (thinkLevel === "high") result.reasoning_effort = "high";
+
+		// Map num_predict to max_tokens (Ollama → OpenAI)
+		if (mergedOptions.num_predict && !mergedOptions.max_tokens) {
+			result.max_tokens = mergedOptions.num_predict;
+		}
+
+		// Pass through all parameters that OpenAI supports
+		const openAIParams = [
+			"max_tokens",
+			"max_completion_tokens",
+			"temperature",
+			"top_p",
+			"seed",
+			"frequency_penalty",
+			"presence_penalty",
+			"logit_bias",
+			"logprobs",
+			"top_logprobs",
+			"n",
+			"stop",
+			"user",
+			"response_format",
+		];
+
+		for (const param of openAIParams) {
+			if (mergedOptions[param] !== undefined) {
+				result[param] = mergedOptions[param];
+			}
+		}
+
+		// Ollama-specific params are simply not passed (ignored by OpenAI)
+		// When using Ollama's OpenAI compat mode, these are handled at model creation time
+
+		return result;
+	}
+
+	/**
+	 * Check if we're using an Ollama endpoint
+	 */
+	private isOllamaEndpoint(): boolean {
+		const url = this.config.apiConfig.baseURL.toLowerCase();
+		return (
+			url.includes("localhost:11434") ||
+			url.includes("127.0.0.1:11434") ||
+			(!url.includes("openai.com") && !url.includes("api.openai.com"))
+		);
+	}
+
+	/**
+	 * Helper methods for tool call notification tracking
+	 */
+	private hasNotifiedToolCall(id: string): boolean {
+		return this.notifiedToolCallIds.has(id);
+	}
+
+	private markToolCallNotified(id: string): void {
+		this.notifiedToolCallIds.add(id);
 	}
 
 	private async saveDebugOutput(): Promise<void> {
@@ -96,7 +177,7 @@ ${z.toJSONSchema(phase.responseSchema)}`
 
 		// Add system prompt only if this is the first run
 		if (this.messages.length === 0) {
-			const systemMessage = {
+			const systemMessage: Message = {
 				role: "system",
 				content: processedSystemPrompt,
 			};
@@ -105,13 +186,29 @@ ${z.toJSONSchema(phase.responseSchema)}`
 		}
 
 		// Add user message
-		const userMessage = {
+		const userMessage: Message = {
 			role: "user",
 			content: processedUserPrompt,
 		};
 		this.messages.push(userMessage);
 
 		this.purgedMessages.push(userMessage);
+
+		// Merge options from config and phase
+		const mergedOptions = {
+			...this.config.options,
+			...(phase.options ?? {}),
+		};
+
+		// Handle Ollama-specific model creation with custom parameters
+		let modelToUse = this.config.model;
+		if (this.isOllamaEndpoint()) {
+			modelToUse = await ensureOllamaModel(
+				this.config.apiConfig.baseURL,
+				this.config.model,
+				mergedOptions,
+			);
+		}
 
 		await this.saveDebugOutput();
 		const phaseTools = Object.values(phase.tools ?? {}).map((tool) => {
@@ -123,8 +220,8 @@ ${z.toJSONSchema(phase.responseSchema)}`
 
 		const tools = phaseTools.length > 0 ? phaseTools : this.tools;
 
-		// Get tool definitions for Ollama, converting Zod schemas to JSON Schema
-		const toolDefinitions = this.convertToolsForOllama(tools);
+		// Get tool definitions for OpenAI, converting Zod schemas to JSON Schema
+		const toolDefinitions = this.convertToolsForAPI(tools);
 
 		let content = "";
 		let round = 0;
@@ -132,43 +229,77 @@ ${z.toJSONSchema(phase.responseSchema)}`
 
 		while (round < maxRounds) {
 			round++;
+			this.notifiedToolCallIds.clear(); // Reset for each round
 
 			try {
 				if (phase.responseSchema) {
 					console.log("Response schema:", z.toJSONSchema(phase.responseSchema));
 				}
-				// Prepare chat options
-				const chatOptions: ChatRequest & { stream: true } = {
-					model: this.config.model,
-					messages: this.purgedMessages,
-					tools: toolDefinitions,
-					stream: true,
-					think: phase.think ?? "medium",
-					options: {
-						...this.config.options,
-						...(phase.options ?? {}),
-					},
-				};
 
-				// Get response from Ollama
-				const response = await this.ollamaClient.chat(chatOptions);
+				// Create OpenAI streaming request
+				const stream = await this.openaiClient.chat.completions.create({
+					model: modelToUse,
+					messages: this.purgedMessages as ChatCompletionMessageParam[],
+					tools: toolDefinitions.length > 0 ? toolDefinitions : undefined,
+					stream: true,
+					stream_options: { include_usage: true },
+					...this.mapOptionsToOpenAI(phase),
+				});
 
 				// Collect the full response and any tool calls
 				const toolCalls: ToolCall[] = [];
 
-				for await (const chunk of response) {
-					if (chunk.message.thinking) {
-						this.config.onThinkingChunk(chunk.message.thinking);
-					} else if (chunk.message.content) {
-						this.config.onContentChunk(chunk.message.content);
-						content += chunk.message.content;
-					} else if (chunk.message.tool_calls) {
-						toolCalls.push(...chunk.message.tool_calls);
+				for await (const chunk of stream) {
+					const delta = chunk.choices[0]
+						?.delta as OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta & {
+						reasoning?: string;
+					};
 
-						// Call onToolCall callback for each tool call
-						for (const toolCall of chunk.message.tool_calls) {
-							this.config.onToolCall(toolCall);
+					// Content streaming
+					if (delta?.content) {
+						this.config.onContentChunk(delta.content);
+						content += delta.content;
+					}
+
+					if (delta?.reasoning) {
+						this.config.onThinkingChunk(delta.reasoning);
+					}
+
+					// Tool call streaming - accumulate fragments
+					if (delta?.tool_calls) {
+						for (const toolCallDelta of delta.tool_calls) {
+							const index = toolCallDelta.index;
+
+							if (!toolCalls[index]) {
+								toolCalls[index] = {
+									id: "",
+									type: "function",
+									function: { name: "", arguments: "" },
+								};
+							}
+
+							if (toolCallDelta.id) toolCalls[index].id = toolCallDelta.id;
+							if (toolCallDelta.function?.name)
+								toolCalls[index].function.name = toolCallDelta.function.name;
+							if (toolCallDelta.function?.arguments)
+								toolCalls[index].function.arguments +=
+									toolCallDelta.function.arguments;
 						}
+
+						// Notify once per tool call
+						for (const toolCall of toolCalls) {
+							if (toolCall.id && !this.hasNotifiedToolCall(toolCall.id)) {
+								this.config.onToolCall(toolCall);
+								this.markToolCallNotified(toolCall.id);
+							}
+						}
+					}
+
+					// Usage information
+					if (chunk.usage?.completion_tokens_details?.reasoning_tokens) {
+						console.log(
+							`Reasoning tokens: ${chunk.usage.completion_tokens_details.reasoning_tokens}`,
+						);
 					}
 				}
 
@@ -201,7 +332,7 @@ ${z.toJSONSchema(phase.responseSchema)}`
 				}
 			} catch (error) {
 				throw new Error(
-					`Ollama chat failed in round ${round}: ${error instanceof Error ? error.message : String(error)}`,
+					`API chat failed in round ${round}: ${error instanceof Error ? error.message : String(error)}`,
 				);
 			}
 		}
@@ -297,7 +428,12 @@ ${z.toJSONSchema(phase.responseSchema)}`
 		}
 
 		try {
-			const args = toolCall.function.arguments;
+			// Parse tool call arguments (handles malformed JSON)
+			const args =
+				typeof toolCall.function.arguments === "string"
+					? JSON.parse(toolCall.function.arguments)
+					: toolCall.function.arguments;
+
 			const result = await tool.execute(args);
 
 			// Call onToolResponse callback
@@ -307,7 +443,8 @@ ${z.toJSONSchema(phase.responseSchema)}`
 			const toolMessage = {
 				role: "tool",
 				content: typeof result === "string" ? result : JSON.stringify(result),
-				tool_name: toolCall.function.name,
+				tool_call_id: toolCall.id,
+				name: toolCall.function.name,
 			} as Message;
 
 			this.messages.push(toolMessage);
@@ -317,13 +454,14 @@ ${z.toJSONSchema(phase.responseSchema)}`
 			return;
 		} catch (error) {
 			// Send retry request to AI
-			const retryMsg = `Tool execution failed: ${error instanceof Error ? error.message : String(error)}. Please retry this tool call.`;
+			const retryMsg = `Tool execution failed: ${error instanceof Error ? error.message : String(error)}. Please retry this tool call with corrected parameters.`;
 			this.config.onToolResponse(retryMsg);
 
 			const retryToolMessage = {
 				role: "tool",
 				content: `Error: ${retryMsg}`,
-				tool_name: toolCall.function.name,
+				tool_call_id: toolCall.id,
+				name: toolCall.function.name,
 			} as Message;
 
 			this.messages.push(retryToolMessage);
