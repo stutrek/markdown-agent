@@ -3,8 +3,8 @@
 model: gpt-oss:20b
 think: medium
 seed: 42
-num_ctx: 65536
-num_predict: 16384
+num_ctx: 131072
+num_predict: 32768
 top_k: 40
 top_p: 0.9
 
