@@ -4,7 +4,7 @@ import { tool } from "../types";
 
 export async function doFetchRss(
 	urls: string | string[],
-	date?: Date,
+	date?: string, // YYYY-MM-DD
 ): Promise<string> {
 	const urlArray = Array.isArray(urls) ? urls : [urls];
 	const allResults: string[] = [];
@@ -39,22 +39,17 @@ export async function doFetchRss(
 			if (items.length === 0) {
 				throw new Error("No RSS/Atom items found");
 			}
-
 			// Take first few items and format them
 			const recentItems = date
 				? items.filter((item) => {
 						const pubDate = new Date(item.pubDate || item.published);
-						const itemDate = new Date(
-							pubDate.getFullYear(),
-							pubDate.getMonth(),
-							pubDate.getDate(),
-						);
-						const targetDate = new Date(
-							date.getFullYear(),
-							date.getMonth(),
-							date.getDate(),
-						);
-						return itemDate.getTime() === targetDate.getTime();
+						const itemDate =
+							pubDate.getFullYear() +
+							"-" +
+							(pubDate.getMonth() + 1) +
+							"-" +
+							pubDate.getDate();
+						return itemDate === date;
 					})
 				: items;
 			const formatted = recentItems
@@ -103,11 +98,7 @@ export const fetchRss = tool({
 		try {
 			// Validate input using Zod schema
 			const validatedInput = fetchRssToolSchema.parse(input);
-			const date = validatedInput.date
-				? new Date(validatedInput.date)
-				: undefined;
-
-			const result = await doFetchRss(validatedInput.urls, date);
+			const result = await doFetchRss(validatedInput.urls, validatedInput.date);
 			return result;
 		} catch (error) {
 			throw new Error(
